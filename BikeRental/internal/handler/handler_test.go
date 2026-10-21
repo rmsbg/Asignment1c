@@ -30,7 +30,7 @@ func TestPagesInBothModes(t *testing.T) {
 				for _, text := range []string{
 					"<h1>" + title + "</h1>", `lang="de"`, `href="#inhalt"`,
 					`href="/"`, `href="/fahrraeder"`, `href="/personen"`, `href="/ausleihe"`,
-					"BikeRental · Phase 2.", "Stunden- und Tagesmiete mit Tarifen je Fahrradtyp.",
+					"BikeRental · Phase 3.", "wählbarem Helm, Schutzausrüstung und Versicherung",
 					"Arbeitsspeicher", "beim Neustart verloren", `href="` + path + `" aria-current="page"`,
 				} {
 					if !strings.Contains(body, text) {

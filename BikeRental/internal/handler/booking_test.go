@@ -23,7 +23,7 @@ func TestPhase5HTTPContracts(t *testing.T) {
 		t.Fatal("invalid empty tariff")
 	}
 	today := domain.Today(time.Now())
-	dates := fmt.Sprintf(`{"bikeType":"MTB","mode":"day","startsOn":%q,"endsOn":%q}`, today, today)
+	dates := fmt.Sprintf(`{"bikeType":"MTB","mode":"day","startsOn":%q,"endsOn":%q,"extras":{"helmet":false,"protection":false,"insurance":false}}`, today, today)
 	call(t, app, "POST", "/api/ausleihen/preis", "application/json", strings.NewReader(dates), 400)
 	for _, body := range []string{`null`, `{}`, `{"version":0,"pricesCents":[],"extraDayCents":1}`, `{"version":0,"pricesCents":[-1],"extraDayCents":1}`, `{"version":0,"pricesCents":[1.5],"extraDayCents":1}`, `{"version":0,"pricesCents":[null],"extraDayCents":1}`, `{"version":0,"pricesCents":[1],"extraDayCents":null}`, `{"version":0,"pricesCents":[1],"extraDayCents":1,"surprise":2}`} {
 		call(t, app, "PUT", "/api/tarife", "application/json", strings.NewReader(body), 400)
@@ -117,7 +117,7 @@ func TestPhase5BookingHTTPFlow(t *testing.T) {
 	// A future booking can be cancelled, but never issued before its first date.
 	tomorrow := time.Now().AddDate(0, 0, 1)
 	future := domain.Today(tomorrow)
-	futureBody := fmt.Sprintf(`{"personID":"demo-person-01","bikeID":"demo-bike-01","bikeType":"Downhill","mode":"day","startsOn":%q,"endsOn":%q,"tariffVersion":2}`, future, future)
+	futureBody := fmt.Sprintf(`{"personID":"demo-person-01","bikeID":"demo-bike-01","bikeType":"Downhill","mode":"day","startsOn":%q,"endsOn":%q,"tariffVersion":2,"extras":{"helmet":false,"protection":false,"insurance":false}}`, future, future)
 	response := call(t, app, "POST", "/api/ausleihen", "application/json", strings.NewReader(futureBody), 201)
 	var futureRental rentalResponse
 	_ = json.Unmarshal(response.Body.Bytes(), &futureRental)

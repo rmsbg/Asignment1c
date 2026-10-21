@@ -12,7 +12,7 @@ import (
 
 func bookingBody(person, bike string, version uint64) string {
 	today := domain.Today(time.Now())
-	data, _ := json.Marshal(map[string]any{"personID": person, "bikeID": bike, "bikeType": testBikeType(bike), "mode": "day", "startsOn": today, "endsOn": today, "tariffVersion": version})
+	data, _ := json.Marshal(map[string]any{"extras": domain.Extras{}, "personID": person, "bikeID": bike, "bikeType": testBikeType(bike), "mode": "day", "startsOn": today, "endsOn": today, "tariffVersion": version})
 	return string(data)
 }
 func issueHTTP(t *testing.T, app http.Handler, id string) rentalResponse {

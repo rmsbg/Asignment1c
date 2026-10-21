@@ -187,3 +187,14 @@ dd { margin: 5px 0 0; }
 @media(max-width:760px){.record-list a.inventory-bike{grid-template-columns:minmax(0,1fr) 80px 20px}.record-list .bike-picture{width:80px}}
 
 .tariff-type{border:1px solid var(--border);border-radius:10px;padding:22px;margin:24px 0;min-width:0}.tariff-type legend{font-weight:700;padding:0 8px}#time-help{font-size:12px;line-height:1.6;color:var(--muted)}
+
+.extras-fieldset,.extra-tariffs{border:1px solid var(--border);border-radius:10px;min-width:0;margin:24px 0;padding:20px}
+.extras-fieldset legend,.extra-tariffs legend{padding:0 8px;font-weight:700}
+.extras-fieldset p,.extra-tariffs p{font-size:13px;line-height:1.6}
+.extra-option{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid var(--border);border-radius:8px;margin:10px 0;cursor:pointer;max-width:570px;background:white}
+.extra-option input{width:20px;height:20px;accent-color:var(--green);flex-shrink:0}
+.extra-option span{display:grid;gap:5px}.extra-option small{color:var(--muted)}
+.extra-option:has(input:checked){border-color:var(--green);background:#f1f6ef}.extra-option:focus-within{outline:3px solid #a34e25;outline-offset:3px}
+.extras-insurance-note{color:var(--muted)}
+.price-breakdown{margin:12px 0;max-width:570px}.price-breakdown div{display:flex;justify-content:space-between;gap:16px;padding:8px 0}.price-breakdown dt,.price-breakdown dd{margin:0;font-size:13px;color:inherit}.price-breakdown dd{white-space:nowrap;text-align:right}
+.price-breakdown .price-total{border-top:1px solid var(--border);font-weight:700;margin-top:6px}.no-extras{font-size:12px;color:var(--muted)}

@@ -25,8 +25,9 @@ type Bike struct {
 	PhotoURL  string `json:"photoURL"`
 }
 
-// Rental separates the agreed calendar period from actual issue and return.
+// BookingInput contains only the choices owned by the booking request.
 type BookingInput struct {
+	Extras        Extras `json:"extras"`
 	PersonID      string `json:"personID"`
 	BikeID        string `json:"bikeID"`
 	BikeType      string `json:"bikeType"`
@@ -36,22 +37,27 @@ type BookingInput struct {
 	TariffVersion uint64 `json:"tariffVersion"`
 }
 
+// Rental preserves the agreement independently of later tariff changes.
 type Rental struct {
-	BikeType        string
-	Mode            string
-	StartsAt        time.Time
-	EndsAt          time.Time
-	DurationHours   int
-	ID              string
-	CreatedAt       time.Time
-	StartsOn        string
-	EndsOn          string
-	DurationDays    int
-	TotalPriceCents int64
-	TariffVersion   uint64
-	CancelledAt     time.Time
-	PersonID        string
-	BikeID          string
-	RentedAt        time.Time
-	ReturnedAt      time.Time
+	BasePriceCents   int64
+	Extras           Extras
+	ExtraPrices      ExtraPrices
+	ExtrasPriceCents int64
+	BikeType         string
+	Mode             string
+	StartsAt         time.Time
+	EndsAt           time.Time
+	DurationHours    int
+	ID               string
+	CreatedAt        time.Time
+	StartsOn         string
+	EndsOn           string
+	DurationDays     int
+	TotalPriceCents  int64
+	TariffVersion    uint64
+	CancelledAt      time.Time
+	PersonID         string
+	BikeID           string
+	RentedAt         time.Time
+	ReturnedAt       time.Time
 }

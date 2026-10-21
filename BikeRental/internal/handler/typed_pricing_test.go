@@ -35,7 +35,7 @@ func TestTypedHourlyAndDailyHTTPContracts(t *testing.T) {
 					start += "T10:00"
 					price = 2 * tc.hour
 				}
-				quoteBody, _ := json.Marshal(map[string]any{"bikeType": tc.kind, "mode": mode, "startsOn": start, "endsOn": end})
+				quoteBody, _ := json.Marshal(map[string]any{"extras": domain.Extras{}, "bikeType": tc.kind, "mode": mode, "startsOn": start, "endsOn": end})
 				w := call(t, app, "POST", "/api/ausleihen/preis", "application/json", bytes.NewReader(quoteBody), 200)
 				var q domain.Quote
 				_ = json.Unmarshal(w.Body.Bytes(), &q)

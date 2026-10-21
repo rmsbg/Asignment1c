@@ -76,7 +76,7 @@ func (s *Store) CreateRental(input domain.BookingInput) (RentalDetails, error) {
 	if bike.Type != input.BikeType {
 		return RentalDetails{}, Conflict{"bikeType", "Der Fahrradtyp wurde geändert. Bitte Verfügbarkeit und Preis erneut prüfen."}
 	}
-	quote, err := s.quoteLocked(bike.Type, input.Mode, input.StartsOn, input.EndsOn)
+	quote, err := s.quoteLocked(bike.Type, input.Mode, input.StartsOn, input.EndsOn, input.Extras)
 	if err != nil {
 		return RentalDetails{}, err
 	}
@@ -90,7 +90,7 @@ func (s *Store) CreateRental(input domain.BookingInput) (RentalDetails, error) {
 		return RentalDetails{}, ErrUnavailable
 	}
 	s.nextRental++
-	r := domain.Rental{ID: fmt.Sprintf("ausleihe-%06d", s.nextRental), PersonID: personID, BikeID: bikeID,
+	r := domain.Rental{BasePriceCents: quote.BasePriceCents, Extras: quote.Extras, ExtraPrices: quote.ExtraPrices, ExtrasPriceCents: quote.ExtrasPriceCents, ID: fmt.Sprintf("ausleihe-%06d", s.nextRental), PersonID: personID, BikeID: bikeID,
 		BikeType: bike.Type, Mode: input.Mode, StartsAt: quote.StartsAt, EndsAt: quote.EndsAt, DurationHours: quote.DurationHours,
 		CreatedAt: s.now().UTC(), StartsOn: input.StartsOn, EndsOn: input.EndsOn, DurationDays: quote.DurationDays,
 		TotalPriceCents: quote.TotalPriceCents, TariffVersion: quote.TariffVersion}

@@ -23,11 +23,11 @@ func TestHourlySnapshotsAndMixedBoundaries(t *testing.T) {
 	}{
 		{"Downhill", "demo-bike-01", 1200, 4000}, {"MTB", "demo-bike-02", 800, 2500}, {"Rennrad", "demo-bike-03", 1000, 3500},
 	} {
-		q, err := s.Quote(tc.kind, "hour", "2026-10-21T10:00", "2026-10-21T11:15")
+		q, err := s.Quote(tc.kind, "hour", "2026-10-21T10:00", "2026-10-21T11:15", domain.Extras{})
 		if err != nil || q.TotalPriceCents != 2*tc.hour || q.DurationHours != 2 {
 			t.Fatalf("hour quote %+v %v", q, err)
 		}
-		q, err = s.Quote(tc.kind, "day", "2026-10-21", "2026-10-21")
+		q, err = s.Quote(tc.kind, "day", "2026-10-21", "2026-10-21", domain.Extras{})
 		if err != nil || q.TotalPriceCents != tc.day || q.DurationDays != 1 {
 			t.Fatalf("day quote %+v %v", q, err)
 		}
@@ -155,7 +155,7 @@ func TestInventoryTypeChangePreservesAgreedPrice(t *testing.T) {
 		t.Fatal(err)
 	}
 	// A preview belongs to the selected type, even if the inventory is edited later.
-	_, err = s.Quote("Downhill", "hour", "2026-10-22T11:00", "2026-10-22T12:00")
+	_, err = s.Quote("Downhill", "hour", "2026-10-22T11:00", "2026-10-22T12:00", domain.Extras{})
 	if err != nil {
 		t.Fatal(err)
 	}

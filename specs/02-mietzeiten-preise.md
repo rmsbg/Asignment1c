@@ -59,6 +59,10 @@ Ausgabe oder Rückgabe. Normalstart ohne Tarif; Demo mit obigen Preisen.
 
 ## Schnittstellen und Daten
 
+Dieser Abschnitt beschreibt den abgenommenen Phase-2-Stand (`be2d6de`).
+Die explizite Extraauswahl und Preisaufteilung werden in
+[Phase 3](03-zusatzleistungen.md) ergänzt.
+
 - `GET/PUT /api/tarife`: `{version, types:{Downhill:{hourlyCents, pricesCents,
   extraDayCents}, MTB:{...}, Rennrad:{...}}}`. PUT verlangt alle drei vollständigen
   Typen und den aktuellen Versionszähler; fehlende/null/ungültige Felder werden

@@ -27,8 +27,9 @@ obersten Repository ausgeschlossen. Herkunft und Wiederverwendung sind in
 
 Seit Phase 2 verwendet `BikeRental/` Stunden- und Tagesmieten mit typabhängigen
 Tarifen, gemeinsamen UTC-Intervallen und festgehaltenen Buchungspreisen. Die
-Fahrradverwaltung und Bilder aus Phase 1 bleiben erhalten. Extras folgen in
-Phase 3. Der folgende Strukturbaum ist relativ zu `BikeRental/`; `specs/` wird
+Fahrradverwaltung und Bilder aus Phase 1 bleiben erhalten. Seit Phase 3 ergänzen
+drei feste boolesche Extraoptionen und einmalige Pauschalen die Buchung; die
+Preisaufteilung wird als unabhängiger Wert gespeichert. Der folgende Strukturbaum ist relativ zu `BikeRental/`; `specs/` wird
 zentral eine Ebene darüber gepflegt.
 
 Die übernommene Schichtung bleibt erhalten:
@@ -59,7 +60,8 @@ Das Inventarmodell enthält Fahrradtyp und Bildzuordnung. Die Tariflogik verwend
 je Typ einen Stundenpreis und eine Tagesstaffel mit Zusatztag; die Tarife werden
 als vollständige Sammlung mit gemeinsamem Versionszähler geändert. Buchungen
 halten Typ, Mietart, Zeitraum, normalisierte UTC-Grenzen, Dauer und Preis fest.
-Zusatzleistungen ergänzen diese Daten in Phase 3. Exakte Felder und Endpunkte legt die jeweilige
+Zusatzleistungen ergänzen diese Daten seit Phase 3 um Auswahl, berechnete
+Einzelpauschalen, Grundpreis und Extrasumme. Exakte Felder und Endpunkte legt die jeweilige
 Feature-Spezifikation vor der Implementierung fest.
 
 ## Zeit, Preise und Konsistenz
@@ -77,15 +79,20 @@ Feature-Spezifikation vor der Implementierung fest.
   stehen in [Phase 0](00-grundlagen.md), Verträge in [Phase 2](02-mietzeiten-preise.md).
 - EUR-Beträge werden als ganze Cent mit Überlaufprüfung verarbeitet. Die bisherige
   Begrenzung auf exakt in JavaScript darstellbare Ganzzahlen bleibt erhalten.
-  Das Backend berechnet Grundpreis, Extras und Gesamtpreis.
-- Tarifversion und Preisvorschau werden beim Buchen erneut geprüft. Änderungen
+  Das Backend berechnet Grundpreis, Extras und Gesamtpreis. Auch die Addition
+  jeder Extrapauschale wird vor Speicherung auf Überlauf geprüft.
+- Tarifversion und Preisvorschau werden beim Buchen erneut geprüft. Ein gemeinsamer
+  Versionszähler gilt für die drei Fahrradtarife und alle Extrapauschalen. Änderungen
   erfordern eine aktualisierte Vorschau und erneute Bestätigung.
 - Referenzen, Tarifstand und Verfügbarkeit werden unter derselben Schreibsperre
   wie die Buchungsanlage geprüft. Rückgabe und Stornierung bleiben idempotent.
   Lesezugriffe liefern unabhängige Kopien einschließlich Bilddaten.
 - Buchungen bewahren die vereinbarte Preisaufteilung und ausgewählten Extras.
   Extras sind unabhängig wählbare Pauschalen pro Buchung ohne eigene Bestände.
-  Eine externe Versicherungsabwicklung ist nicht Bestandteil des MVP.
+  Eine externe Versicherungsabwicklung ist nicht Bestandteil des MVP. Die HTTP-API
+  verlangt eine explizite boolesche Auswahl aller drei Optionen; fehlende/null oder
+  unbekannte Felder sind ungültig. Tarifänderungen, Ausgabe, Rückgabe und Stornierung
+  ändern bestehende Auswahl und Preisaufteilung nicht. Details: [Phase 3](03-zusatzleistungen.md).
 
 ## Bilder, Fehlerbehandlung und Datenschutz
 
@@ -112,7 +119,9 @@ Loopback-Adresse `http://127.0.0.1:8080`, leerer Normalstart und optionaler
 `-demo`-Start bleiben erhalten. BikeRental-Demodaten sollen alle drei Fahrradtypen,
 geeignete Bilder, synthetische Personen und nachvollziehbare Beispieltarife
 abdecken. Seit Phase 2 sind je Typ Stundenpreis und Tagesstaffel eingerichtet;
-konkrete synthetische Beispielbeträge stehen in README und Phase-2-Spezifikation. Die Oberfläche kennzeichnet Demodaten und Datenverlust
+konkrete synthetische Beispielbeträge stehen in README und Phase-2-Spezifikation.
+Seit Phase 3 kommen Demo-Extrapauschalen von 5/10/8 EUR für Helm/Schutzausrüstung/
+Versicherung hinzu. Auch diese Gebühren sind bearbeitbar und flüchtig. Die Oberfläche kennzeichnet Demodaten und Datenverlust
 beim Neustart.
 
 Aus dem Go-Modulverzeichnis `BikeRental/`:

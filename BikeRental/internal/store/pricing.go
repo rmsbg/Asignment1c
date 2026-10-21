@@ -7,7 +7,7 @@ type Conflict struct{ Field, Message string }
 func (e Conflict) Error() string { return e.Message }
 
 func cloneTariff(t domain.Tariff) domain.Tariff {
-	result := domain.Tariff{Version: t.Version, Types: map[string]domain.Rate{}}
+	result := domain.Tariff{Version: t.Version, Extras: t.Extras, Types: map[string]domain.Rate{}}
 	for kind, rate := range t.Types {
 		rate.PricesCents = append([]int64{}, rate.PricesCents...)
 		result.Types[kind] = rate
@@ -32,7 +32,7 @@ func (s *Store) SaveTariff(t domain.Tariff) (domain.Tariff, error) {
 	s.tariff = cloneTariff(t)
 	return cloneTariff(t), nil
 }
-func (s *Store) quoteLocked(kind, mode, start, end string) (domain.Quote, error) {
+func (s *Store) quoteLocked(kind, mode, start, end string, extras domain.Extras) (domain.Quote, error) {
 	if !domain.ValidBikeType(kind) {
 		return domain.Quote{}, domain.ValidationErrors{"bikeType": "Bitte Downhill, MTB oder Rennrad auswählen."}
 	}
@@ -52,10 +52,14 @@ func (s *Store) quoteLocked(kind, mode, start, end string) (domain.Quote, error)
 	if err != nil {
 		return domain.Quote{}, err
 	}
-	return domain.Quote{BikeType: kind, Mode: mode, DurationDays: period.DurationDays, DurationHours: period.DurationHours, StartsAt: period.StartsAt, EndsAt: period.EndsAt, TotalPriceCents: price, TariffVersion: s.tariff.Version}, nil
+	charged, extraTotal, total, err := s.tariff.Extras.AddTo(price, extras)
+	if err != nil {
+		return domain.Quote{}, err
+	}
+	return domain.Quote{BasePriceCents: price, Extras: extras, ExtraPrices: charged, ExtraRates: s.tariff.Extras, ExtrasPriceCents: extraTotal, BikeType: kind, Mode: mode, DurationDays: period.DurationDays, DurationHours: period.DurationHours, StartsAt: period.StartsAt, EndsAt: period.EndsAt, TotalPriceCents: total, TariffVersion: s.tariff.Version}, nil
 }
-func (s *Store) Quote(kind, mode, start, end string) (domain.Quote, error) {
+func (s *Store) Quote(kind, mode, start, end string, extras domain.Extras) (domain.Quote, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.quoteLocked(kind, mode, start, end)
+	return s.quoteLocked(kind, mode, start, end, extras)
 }

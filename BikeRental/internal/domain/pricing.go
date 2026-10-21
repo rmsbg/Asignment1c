@@ -43,19 +43,25 @@ type Rate struct {
 }
 
 type Tariff struct {
+	Extras  ExtraPrices     `json:"extras"`
 	Version uint64          `json:"version"`
 	Types   map[string]Rate `json:"types"`
 }
 
 type Quote struct {
-	BikeType        string    `json:"bikeType"`
-	Mode            string    `json:"mode"`
-	DurationDays    int       `json:"durationDays"`
-	DurationHours   int       `json:"durationHours"`
-	StartsAt        time.Time `json:"startsAt"`
-	EndsAt          time.Time `json:"endsAt"`
-	TotalPriceCents int64     `json:"totalPriceCents"`
-	TariffVersion   uint64    `json:"tariffVersion"`
+	BasePriceCents   int64       `json:"basePriceCents"`
+	Extras           Extras      `json:"extras"`
+	ExtraPrices      ExtraPrices `json:"extraPrices"`
+	ExtraRates       ExtraPrices `json:"extraRates"`
+	ExtrasPriceCents int64       `json:"extrasPriceCents"`
+	BikeType         string      `json:"bikeType"`
+	Mode             string      `json:"mode"`
+	DurationDays     int         `json:"durationDays"`
+	DurationHours    int         `json:"durationHours"`
+	StartsAt         time.Time   `json:"startsAt"`
+	EndsAt           time.Time   `json:"endsAt"`
+	TotalPriceCents  int64       `json:"totalPriceCents"`
+	TariffVersion    uint64      `json:"tariffVersion"`
 }
 
 func ValidBikeType(kind string) bool { return kind == "Downhill" || kind == "MTB" || kind == "Rennrad" }
@@ -83,6 +89,11 @@ func (r Rate) Validate() error {
 }
 func (t Tariff) Validate() error {
 	fields := ValidationErrors{}
+	if err := t.Extras.Validate(); err != nil {
+		for key, msg := range err.(ValidationErrors) {
+			fields[key] = msg
+		}
+	}
 	for _, kind := range []string{"Downhill", "MTB", "Rennrad"} {
 		r, ok := t.Types[kind]
 		if !ok {

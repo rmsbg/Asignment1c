@@ -61,7 +61,7 @@ func (s *Store) SeedDemo() {
 	defer s.mu.Unlock()
 
 	if s.tariff.Version == 0 {
-		s.tariff = domain.Tariff{Version: 1, Types: map[string]domain.Rate{
+		s.tariff = domain.Tariff{Version: 1, Extras: domain.ExtraPrices{HelmetCents: 500, ProtectionCents: 1000, InsuranceCents: 800}, Types: map[string]domain.Rate{
 			"Downhill": {HourlyCents: 1200, PricesCents: []int64{4000, 7000, 9500}, ExtraDayCents: 2500},
 			"MTB":      {HourlyCents: 800, PricesCents: []int64{2500, 4500, 6000}, ExtraDayCents: 1500},
 			"Rennrad":  {HourlyCents: 1000, PricesCents: []int64{3500, 6000, 8000}, ExtraDayCents: 2000},

@@ -1,6 +1,7 @@
 package store
 
 import (
+	"bikerental/internal/domain"
 	"errors"
 	"reflect"
 	"sync"
@@ -157,7 +158,7 @@ func TestTariffSnapshotsAndConflicts(t *testing.T) {
 	if normal.Tariff().Version != 0 {
 		t.Fatal("normal mode inherited tariff")
 	}
-	if _, err := normal.Quote("Downhill", "day", "9999-01-01", "9999-01-01"); err == nil {
+	if _, err := normal.Quote("Downhill", "day", "9999-01-01", "9999-01-01", domain.Extras{}); err == nil {
 		t.Fatal("missing tariff quoted")
 	}
 }
@@ -230,7 +231,7 @@ func TestAtomicPriceSnapshotDuringEdits(t *testing.T) {
 				return
 			}
 			for {
-				q, err := s.Quote("MTB", "day", "2026-10-21", "2026-10-21")
+				q, err := s.Quote("MTB", "day", "2026-10-21", "2026-10-21", domain.Extras{})
 				if err != nil {
 					t.Error(err)
 					return

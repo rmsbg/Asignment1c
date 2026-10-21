@@ -8,8 +8,9 @@ Phasennachweise werden zentral im übergeordneten Projekt gepflegt:
 - [Technische Verfassung](../specs/tech-stack.md)
 - [Phase 0](../specs/00-grundlagen.md)
 
-**Phase 2:** Stunden- und Tagesmiete mit Preisen je Fahrradtyp, Pflichtbildern
-und gemeinsamer Verfügbarkeitsprüfung. Zusatzleistungen folgen in Phase 3.
-Spezifikation und Prüfnachweis: [Phase 2](../specs/02-mietzeiten-preise.md).
+**Phase 3:** Stunden- und Tagesmiete mit Preisen je Fahrradtyp sowie Helm,
+Schutzausrüstung und Versicherung als unabhängig wählbaren Pauschalen pro Buchung.
+Die Preisaufteilung bleibt im Verlauf erhalten.
+Spezifikation und Prüfnachweis: [Phase 3](../specs/03-zusatzleistungen.md).
 
 Start aus diesem Verzeichnis: `go run ./cmd/server`, optional mit `-demo`.

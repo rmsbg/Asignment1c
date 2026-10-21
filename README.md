@@ -16,16 +16,17 @@ Das System soll kostensparend entwickelt werden und daher zu möglichst großen 
 - exakt wie bei „SkiRental“
 
 
-## Entwicklungsstand – Phase 2
+## Entwicklungsstand – Phase 3
 
-**Phase 2 ist implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
-vom Auftraggeber abgenommen. [Prüfnachweis und Screenshots](specs/02-mietzeiten-preise.md).**
-Phase 0 ist mit `28aa829`, die ausdrücklich abgenommene Phase 1 mit `b8901d2` gesichert.
+**Phase 3 ist implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
+vom Auftraggeber abgenommen. [Prüfnachweis und Screenshots](specs/03-zusatzleistungen.md).**
+Phase 0 ist mit `28aa829`, Phase 1 mit `b8901d2` und die ausdrücklich abgenommene
+Phase 2 mit `be2d6de` gesichert.
 
 Die Arbeitskopie liegt in `BikeRental/` (Go-Modul `bikerental`) und baut auf
-SkiRental auf. Fahrräder mit Typ und Pflichtbild werden jetzt stundenweise oder
-tageweise zu typabhängigen Preisen gebucht. Helm/Schutzausrüstung/Versicherung
-folgen in Phase 3.
+SkiRental auf. Fahrräder mit Typ und Pflichtbild werden stundenweise oder tageweise
+zu typabhängigen Preisen gebucht. Helm, Schutzausrüstung und Versicherung sind
+jetzt unabhängig wählbare Zusatzleistungen mit Pauschalen pro Buchung.
 
 `SkiRental/` bleibt unveränderte Referenz mit eigenem Git-Repository. Das oberste
 Git-Repository umfasst BikeRental und Dokumentation; die Referenz ist darin
@@ -59,10 +60,14 @@ mit Illustration, eine synthetische Person und folgende Beispielpreise:
 | MTB | 8 EUR | 25 / 45 / 60 EUR | 15 EUR |
 | Rennrad | 10 EUR | 35 / 60 / 80 EUR | 20 EUR |
 
+Demo-Extrapauschalen je Buchung: **Helm 5 EUR**, **Schutzausrüstung 10 EUR**,
+**Versicherung 8 EUR**. Diese Beträge sind synthetische Beispielpreise.
+
 Alle Änderungen und Uploads gehen beim Neustart verloren. Im Normalmodus vor der
 ersten Buchung unter **Tarife verwalten** die drei vollständigen Tarifstaffeln
-inklusive Stundenpreis einrichten. Alle EUR-Beträge akzeptieren Komma oder Punkt
-und höchstens zwei Nachkommastellen; die Preise sind bearbeitbar.
+inklusive Stundenpreis und alle drei Extrapauschalen einrichten. Alle EUR-Beträge akzeptieren Komma oder Punkt
+und höchstens zwei Nachkommastellen; die Preise sind bearbeitbar. Eine ausdrücklich
+eingerichtete Pauschale von 0 EUR ist zulässig.
 
 In dieser Arbeitsumgebung liegt die geprüfte Toolchain temporär unter
 `/private/tmp/skirental-toolchain/go`. Falls Go nicht im PATH liegt:
@@ -84,10 +89,12 @@ Speichern erscheinen generierte ID, Name, Typ und Bild. In der Detailansicht fü
 Die Personenverwaltung bietet weiterhin manuellen Ausweisnachweis oder ein
 JPEG-/PNG-Foto. Nach Registrierung führt **Fahrrad ausleihen** zum vorausgewählten
 Kunden. Unter **Neue Ausleihe** Person, Fahrradtyp und Mietart wählen, dann Beginn
-und geplante Rückgabe eingeben. **Verfügbarkeit und Preis prüfen** zeigt den Preis
-und passende freie Fahrräder mit Bild, Name, Typ und ID. Auswahl per Klick oder
-Tabulator/Leertaste/Pfeiltasten. Änderungen an Zeit, Typ oder Mietart verwerfen
-Auswahl und Preisvorschau und verlangen eine erneute Prüfung.
+und geplante Rückgabe eingeben. Unter **Zusatzleistungen** Helm, Schutzausrüstung
+und/oder Versicherung auswählen; alle Optionen sind zunächst abgewählt.
+**Verfügbarkeit und Preis prüfen** zeigt Fahrradpreis, Einzelpauschalen, Extrasumme
+und Gesamtpreis sowie passende freie Fahrräder mit Bild, Name, Typ und ID. Auswahl per Klick oder
+Tabulator/Leertaste/Pfeiltasten. Änderungen an Zeit, Typ, Mietart oder Extras verwerfen Auswahl und Preisvorschau
+und verlangen eine erneute Prüfung.
 
 - **Stundenmiete:** Eingabe minutengenau in Wiener Zeit, mindestens eine berechnete
   Stunde, angefangene Stunden aufrunden. 10:00–11:15 kostet zwei Stunden, reserviert
@@ -99,6 +106,13 @@ Auswahl und Preisvorschau und verlangen eine erneute Prüfung.
   Nicht existierende/doppeldeutige Eingabezeiten bei Zeitumstellungen sind unzulässig.
   Tagespreise zählen Kalendertage; Stundenpreise die tatsächlich verstrichene Zeit.
 
+Extrapauschalen gelten genau einmal pro Buchung, unabhängig von Stunden/Tagen
+und Fahrradtyp. Ohne Auswahl zeigt die Vorschau **Keine Zusatzleistungen**.
+Nach erfolgreicher Buchung ist die nächste Eingabe wieder ohne vorausgewählte
+Extras. Die Versicherungsoption dokumentiert Auswahl und Aufpreis; der lokale
+Prototyp führt keine externe Versicherungsabwicklung durch. Zubehörbestände
+werden nicht geführt.
+
 Nach **Zum angezeigten Preis buchen** erfolgt die Ausgabe separat über
 **Fahrrad ausgeben**, später **Rückgabe erfassen**. Ausgabe nur innerhalb des
 gebuchten Zeitraums und nach tatsächlicher Rückgabe des vorherigen Vorgangs.
@@ -106,9 +120,12 @@ Direkte Anschlussbuchungen sind möglich, Doppelbuchungen beider Mietarten werde
 verhindert. Noch nicht ausgegebene Buchungen sind stornierbar. Abgelaufene und
 überfällige Vorgänge werden markiert; **Aktualisieren** lädt deren aktuellen Stand.
 
-Bei zwischenzeitlicher Tarif- oder Typänderung muss der neue Preis nochmals geprüft
+Bei zwischenzeitlicher Tarif- oder Typänderung, auch nur einer Extrapauschale,
+muss der neue Preis nochmals geprüft
 und bestätigt werden. Bestehende Buchungen behalten den gebuchten Typ, Mietart,
-Dauer und Preis auch bei späterer Ausgabe oder früher/später Rückgabe.
+Dauer, gewählte Extras, Einzelpauschalen und Gesamtpreis auch bei späterer Ausgabe
+oder früher/später Rückgabe. Die Preisaufteilung bleibt in Übersicht und Verlauf
+sichtbar, auch nach Stornierung.
 Das Dashboard zählt tatsächlich ausgegebene Fahrräder. Die interaktiven Abläufe
 benötigen JavaScript.
 
@@ -141,6 +158,7 @@ aus ihrem mitgelieferten Zeichencode neu erzeugt werden.
 - [Phase 0: Grundlagen und Prüfnachweis](specs/00-grundlagen.md)
 - [Phase 1: Fahrradverwaltung, API und Prüfnachweis](specs/01-fahrradverwaltung.md)
 - [Phase 2: Mietzeiten, Tarife und Prüfnachweis](specs/02-mietzeiten-preise.md)
+- [Phase 3: Zusatzleistungen, API und Prüfnachweis](specs/03-zusatzleistungen.md)
 
 Nach technischem Abschluss und ausdrücklicher Auftraggeberabnahme jeder Phase
 wird ein lokaler Git-Commit erstellt. Ein Implementierungsauftrag allein gilt
