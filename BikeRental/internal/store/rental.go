@@ -8,7 +8,7 @@ import (
 	"bikerental/internal/domain"
 )
 
-var ErrUnavailable = errors.New("Das Ski-Paar ist im gewählten Zeitraum bereits gebucht. Bitte ein anderes Paar oder einen anderen Zeitraum auswählen.")
+var ErrUnavailable = errors.New("Das Fahrrad ist im gewählten Zeitraum bereits gebucht. Bitte ein anderes Fahrrad oder einen anderen Zeitraum auswählen.")
 
 type MissingReference struct{ Field string }
 
@@ -20,34 +20,34 @@ type RentalDetails struct {
 	Today      string
 	Rental     domain.Rental
 	PersonName string
-	SkiName    string
+	BikeName   string
 }
 
 func (s *Store) rentalDetailsLocked(r domain.Rental) RentalDetails {
-	return RentalDetails{Today: domain.Today(s.now()), Rental: r, PersonName: s.people[r.PersonID].Name, SkiName: s.skis[r.SkiID].Name}
+	return RentalDetails{Today: domain.Today(s.now()), Rental: r, PersonName: s.people[r.PersonID].Name, BikeName: s.bikes[r.BikeID].Name}
 }
-func (s *Store) availablePeriodLocked(skiID, start, end string) bool {
+func (s *Store) availablePeriodLocked(bikeID, start, end string) bool {
 	for _, r := range s.rentals {
-		if r.SkiID == skiID && r.BlocksPeriod() && r.StartsOn <= end && start <= r.EndsOn {
+		if r.BikeID == bikeID && r.BlocksPeriod() && r.StartsOn <= end && start <= r.EndsOn {
 			return false
 		}
 	}
 	return true
 }
-func (s *Store) AvailableSkis() []domain.Ski {
+func (s *Store) AvailableBikes() []domain.Bike {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	// Build once rather than scanning the rental history for every pair.
 	active := make(map[string]bool)
 	for _, r := range s.rentals {
 		if r.Active() {
-			active[r.SkiID] = true
+			active[r.BikeID] = true
 		}
 	}
-	result := make([]domain.Ski, 0, len(s.skis))
-	for id, ski := range s.skis {
+	result := make([]domain.Bike, 0, len(s.bikes))
+	for id, bike := range s.bikes {
 		if !active[id] {
-			result = append(result, ski)
+			result = append(result, cloneBike(bike))
 		}
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].ID < result[j].ID })
@@ -55,8 +55,8 @@ func (s *Store) AvailableSkis() []domain.Ski {
 }
 
 // CreateRental validates price, references and overlap in one atomic operation.
-func (s *Store) CreateRental(personID, skiID, start, end string, version uint64) (RentalDetails, error) {
-	personID, skiID, err := domain.ValidateRentalReferences(personID, skiID)
+func (s *Store) CreateRental(personID, bikeID, start, end string, version uint64) (RentalDetails, error) {
+	personID, bikeID, err := domain.ValidateRentalReferences(personID, bikeID)
 	if err != nil {
 		return RentalDetails{}, err
 	}
@@ -65,8 +65,8 @@ func (s *Store) CreateRental(personID, skiID, start, end string, version uint64)
 	if _, ok := s.people[personID]; !ok {
 		return RentalDetails{}, MissingReference{Field: "personID"}
 	}
-	if _, ok := s.skis[skiID]; !ok {
-		return RentalDetails{}, MissingReference{Field: "skiID"}
+	if _, ok := s.bikes[bikeID]; !ok {
+		return RentalDetails{}, MissingReference{Field: "bikeID"}
 	}
 	quote, err := s.quoteLocked(start, end)
 	if err != nil {
@@ -75,27 +75,27 @@ func (s *Store) CreateRental(personID, skiID, start, end string, version uint64)
 	if version != quote.TariffVersion {
 		return RentalDetails{}, Conflict{"tariffVersion", "Der Tarif wurde geändert. Bitte den neuen Preis prüfen und erneut bestätigen."}
 	}
-	if !s.availablePeriodLocked(skiID, start, end) {
+	if !s.availablePeriodLocked(bikeID, start, end) {
 		return RentalDetails{}, ErrUnavailable
 	}
 	s.nextRental++
-	r := domain.Rental{ID: fmt.Sprintf("ausleihe-%06d", s.nextRental), PersonID: personID, SkiID: skiID,
+	r := domain.Rental{ID: fmt.Sprintf("ausleihe-%06d", s.nextRental), PersonID: personID, BikeID: bikeID,
 		CreatedAt: s.now().UTC(), StartsOn: start, EndsOn: end, DurationDays: quote.DurationDays,
 		TotalPriceCents: quote.TotalPriceCents, TariffVersion: quote.TariffVersion}
 	s.rentals[r.ID] = r
 	return s.rentalDetailsLocked(r), nil
 }
 
-func (s *Store) AvailableFor(start, end string) ([]domain.Ski, error) {
+func (s *Store) AvailableFor(start, end string) ([]domain.Bike, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	if _, err := domain.PeriodDays(start, end, domain.Today(s.now())); err != nil {
 		return nil, err
 	}
-	result := []domain.Ski{}
-	for id, ski := range s.skis {
+	result := []domain.Bike{}
+	for id, bike := range s.bikes {
 		if s.availablePeriodLocked(id, start, end) {
-			result = append(result, ski)
+			result = append(result, cloneBike(bike))
 		}
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].ID < result[j].ID })
@@ -119,8 +119,8 @@ func (s *Store) IssueRental(id string) (RentalDetails, error) {
 		return RentalDetails{}, Conflict{"form", "Die Ausgabe ist nur innerhalb des gebuchten Zeitraums möglich."}
 	}
 	for _, other := range s.rentals {
-		if other.SkiID == r.SkiID && other.Active() {
-			return RentalDetails{}, Conflict{"form", "Das Ski-Paar wurde aus einer vorherigen Ausleihe noch nicht zurückgegeben."}
+		if other.BikeID == r.BikeID && other.Active() {
+			return RentalDetails{}, Conflict{"form", "Das Fahrrad wurde aus einer vorherigen Ausleihe noch nicht zurückgegeben."}
 		}
 	}
 	r.RentedAt = s.now().UTC()

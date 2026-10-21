@@ -16,20 +16,21 @@ Das System soll kostensparend entwickelt werden und daher zu möglichst großen 
 - exakt wie bei „SkiRental“
 
 
-## Entwicklungsstand – Phase 0
+## Entwicklungsstand – Phase 1
 
-**Phase 0 ist technisch abgeschlossen, geprüft und am 21.10.2026 ausdrücklich vom Auftraggeber abgenommen.**
+**Phase 1 ist implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
+vom Auftraggeber abgenommen. [Prüfnachweis und Screenshots](specs/01-fahrradverwaltung.md).**
+Phase 0 ist am 21.10.2026 ausdrücklich abgenommen und mit `28aa829` gesichert.
 
-Die separate Arbeitskopie liegt in `BikeRental/` (Go-Modul `bikerental`). Sie
-übernimmt den SkiRental-Stand bis einschließlich Phase 5. **Die Fachfunktionen
-arbeiten noch mit Ski und bisherigen Tagestarifen.** Jede Seite kennzeichnet
-diesen Ausgangsstand. Fahrradtypen, Fahrradbilder, Stundenmiete und Extras
-folgen in den nächsten Phasen.
+Die Arbeitskopie liegt in `BikeRental/` (Go-Modul `bikerental`). Sie baut auf dem
+SkiRental-Stand bis einschließlich dessen Phase 5 auf. Fahrräder werden jetzt mit
+Typ und Pflichtbild angelegt und bei der Ausleihe mit Bild ausgewählt.
+**Derzeit gilt für alle Typen dieselbe Tagesstaffel.** Stundenmiete und Preise je
+Fahrradtyp folgen in Phase 2, Helm/Schutzausrüstung/Versicherung in Phase 3.
 
-`SkiRental/` bleibt unveränderte Referenz mit eigenem Git-Repository. Das neue
-Git-Repository im obersten Verzeichnis umfasst BikeRental und diese Dokumentation;
-die Referenz ist darin ausgeschlossen. Für eine Weitergabe der ursprünglichen
-Referenz muss `SkiRental/` separat mitgeliefert werden.
+`SkiRental/` bleibt unveränderte Referenz mit eigenem Git-Repository. Das oberste
+Git-Repository umfasst BikeRental und Dokumentation; die Referenz ist darin
+wie vereinbart ausgeschlossen und bei einer Weitergabe separat bereitzustellen.
 
 ### Voraussetzungen und lokaler Start
 
@@ -41,27 +42,49 @@ oder Frontend-Buildwerkzeuge erforderlich.
 cd BikeRental
 go version
 go run ./cmd/server
-# Alternativ mit synthetischen SkiRental-Beispieldaten:
+# Alternativ mit synthetischen Beispieldaten:
 go run ./cmd/server -demo
 ```
 
-Die Anwendung ist unter **http://127.0.0.1:8080** erreichbar; beenden mit `Ctrl+C`.
-Die beiden Modi werden nacheinander gestartet. Bei belegtem Port zuerst den
-anderen Dienst beenden. Der Server bindet nur an Loopback.
+Öffnen: **http://127.0.0.1:8080**, beenden mit `Ctrl+C`. Die Modi werden
+nacheinander gestartet; ist Port 8080 belegt, zuerst den anderen Dienst beenden.
+Der Server bindet nur an Loopback. Es gibt keine Benutzerkonten und keinen
+produktiven Betrieb; ausschließlich synthetische Kundendaten verwenden.
 
-Normalstart: leerer Store ohne Tarif. Demostart in Phase 0: zwei Ski-Paare, eine
-synthetische Person und der bisherige Beispieltagestarif. Alle Änderungen und
-Uploads gehen beim Neustart verloren. Es gibt keine Benutzerkonten und keinen
-produktiven Betrieb. Nur synthetische Kundendaten verwenden.
+Normalstart: leerer Store ohne Tarif. Demo: je ein Downhill-, MTB- und Rennrad mit
+mitgelieferter Illustration, eine synthetische Person und der Übergangstagestarif
+25/45/60 EUR für 1/2/3 Tage plus 15 EUR je Zusatztag. Alle Änderungen und Uploads
+gehen beim Neustart verloren. Für Normalmodus vor dem Buchen einen Tarif einrichten.
 
-In dieser Arbeitsumgebung liegt die zur Prüfung verwendete Toolchain temporär
-unter `/private/tmp/skirental-toolchain/go`. Falls Go nicht im PATH liegt:
+In dieser Arbeitsumgebung liegt die geprüfte Toolchain temporär unter
+`/private/tmp/skirental-toolchain/go`. Falls Go nicht im PATH liegt:
 
 ```sh
 export PATH="/private/tmp/skirental-toolchain/go/bin:$PATH"
 ```
 
 Für spätere Entwicklung ist eine reguläre Go-Installation erforderlich.
+
+### Fahrräder verwalten und auswählen
+
+Unter **Fahrräder verwalten → Fahrrad anlegen** Bezeichnung, Typ Downhill/MTB/Rennrad
+und ein JPEG-/PNG-Bild angeben. Maximal 5 MiB und 20 Millionen Pixel. Nach dem
+Speichern erscheinen generierte ID, Name, Typ und Bild. In der Detailansicht führt
+**Bearbeiten** zum Formular: Bild beibehalten oder durch Upload ersetzen.
+**Abbrechen** verwirft Eingaben; ungültige Eingaben verändern keine gespeicherten Daten.
+
+Die Personenverwaltung bietet weiterhin manuellen Ausweisnachweis oder ein
+JPEG-/PNG-Foto. Nach Registrierung führt **Fahrrad ausleihen** zum vorausgewählten
+Kunden. Unter **Neue Ausleihe** Person und Datumsbereich wählen, dann **Verfügbarkeit
+und Preis prüfen**. Freie Fahrräder erscheinen mit Bild, Name, Typ und ID als
+Auswahlkarten. Auswahl per Klick oder Tabulator, Leertaste und Pfeiltasten.
+Datumsänderungen verwerfen die bisherige Auswahl und verlangen erneute Prüfung.
+
+Nach **Zum angezeigten Preis buchen** erfolgt die Ausgabe separat über
+**Fahrrad ausgeben**, später **Rückgabe erfassen**. Offene Buchungen können vor
+Ausgabe storniert werden. Beide Randtage zählen; Änderungen am Übergangstarif
+ändern bestehende Preise nicht. Das Dashboard zählt tatsächlich ausgegebene Fahrräder.
+Die Verwaltung und die interaktiven Abläufe benötigen JavaScript.
 
 ### Build und Prüfung
 
@@ -79,15 +102,18 @@ go build -o bin/bikerental ./cmd/server
 # Alternativ: ./bin/bikerental -demo
 ```
 
-HTML, CSS und JavaScript sind eingebettet; das Binary benötigt beim Start keine
-Asset-Dateien aus dem Repository. Nach Asset-Änderungen neu starten.
+HTML, CSS, JavaScript und Demoillustrationen sind eingebettet. Das Binary benötigt
+beim Start keine Asset-Dateien aus dem Repository. Nach Asset-Änderungen neu starten.
+Die Demoillustrationen können ohne externe Pakete mit `go run ./tools/demo-bikes`
+aus ihrem mitgelieferten Zeichencode neu erzeugt werden.
 
 ### Spezifikation und Abnahme
 
 - [Mission und Produktverfassung](specs/mission.md)
 - [Technische Verfassung](specs/tech-stack.md)
 - [Roadmap](specs/roadmap.md)
-- [Phase 0: Entscheidungen, Wiederverwendung und Prüfnachweis](specs/00-grundlagen.md)
+- [Phase 0: Grundlagen und Prüfnachweis](specs/00-grundlagen.md)
+- [Phase 1: Fahrradverwaltung, API und Prüfnachweis](specs/01-fahrradverwaltung.md)
 
 Nach technischem Abschluss und ausdrücklicher Auftraggeberabnahme jeder Phase
 wird ein lokaler Git-Commit erstellt. Ein Implementierungsauftrag allein gilt

@@ -4,19 +4,19 @@ import "strings"
 
 func (r Rental) Active() bool { return !r.RentedAt.IsZero() && r.ReturnedAt.IsZero() }
 
-func ValidateRentalReferences(personID, skiID string) (string, string, error) {
-	personID, skiID = strings.TrimSpace(personID), strings.TrimSpace(skiID)
+func ValidateRentalReferences(personID, bikeID string) (string, string, error) {
+	personID, bikeID = strings.TrimSpace(personID), strings.TrimSpace(bikeID)
 	fields := ValidationErrors{}
 	if personID == "" {
 		fields["personID"] = "Bitte eine Person auswählen."
 	}
-	if skiID == "" {
-		fields["skiID"] = "Bitte ein verfügbares Ski-Paar auswählen."
+	if bikeID == "" {
+		fields["bikeID"] = "Bitte ein verfügbares Fahrrad auswählen."
 	}
 	if len(fields) > 0 {
 		return "", "", fields
 	}
-	return personID, skiID, nil
+	return personID, bikeID, nil
 }
 
 // BlocksPeriod remains true for issued rentals until actual return.

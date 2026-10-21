@@ -21,7 +21,7 @@
    const response = await fetch('/api/dashboard', {cache:'no-store',signal:controller.signal});
    if (!response.ok) throw new Error('Dashboard nicht erreichbar');
    const counts = await response.json();
-   if (!fields.every(field => Number.isSafeInteger(counts[field.dataset.metric]) && counts[field.dataset.metric] >= 0) || counts.availableSkis + counts.rentedSkis !== counts.totalSkis) throw new Error('Ungültige Kennzahlen');
+   if (!fields.every(field => Number.isSafeInteger(counts[field.dataset.metric]) && counts[field.dataset.metric] >= 0) || counts.availableBikes + counts.rentedBikes !== counts.totalBikes) throw new Error('Ungültige Kennzahlen');
    if (document.hidden || stopped || controller.signal.aborted) return;
    fields.forEach(field => field.textContent = counts[field.dataset.metric]);
    lastSuccess = new Date().toLocaleTimeString('de-AT');

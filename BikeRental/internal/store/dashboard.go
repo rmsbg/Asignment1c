@@ -2,9 +2,9 @@ package store
 
 // DashboardCounts is one consistent, anonymous snapshot of the current inventory.
 type DashboardCounts struct {
-	AvailableSkis    int `json:"availableSkis"`
-	RentedSkis       int `json:"rentedSkis"`
-	TotalSkis        int `json:"totalSkis"`
+	AvailableBikes   int `json:"availableBikes"`
+	RentedBikes      int `json:"rentedBikes"`
+	TotalBikes       int `json:"totalBikes"`
 	RegisteredPeople int `json:"registeredPeople"`
 }
 
@@ -14,11 +14,11 @@ func (s *Store) Dashboard() DashboardCounts {
 	active := make(map[string]bool)
 	for _, r := range s.rentals {
 		if r.Active() {
-			active[r.SkiID] = true
+			active[r.BikeID] = true
 		}
 	}
 	return DashboardCounts{
-		AvailableSkis: len(s.skis) - len(active), RentedSkis: len(active),
-		TotalSkis: len(s.skis), RegisteredPeople: len(s.people),
+		AvailableBikes: len(s.bikes) - len(active), RentedBikes: len(active),
+		TotalBikes: len(s.bikes), RegisteredPeople: len(s.people),
 	}
 }

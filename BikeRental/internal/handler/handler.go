@@ -39,10 +39,10 @@ func New(state *store.Store) (http.Handler, error) {
 	}
 	pages := []page{
 		{Path: "/", Title: "Dashboard", Description: "Alles für den Verleihtag an einem Ort.", Step: "Übersicht"},
-		{Path: "/ski", Title: "Ski verwalten", Description: "Der richtige Überblick über jedes Paar.", Step: "Inventar"},
+		{Path: "/fahrraeder", Title: "Fahrräder verwalten", Description: "Der richtige Überblick über jedes Fahrrad.", Step: "Inventar"},
 		{Path: "/personen", Title: "Personen verwalten", Description: "Kunden erfassen. Den Überblick behalten.", Step: "Kunden"},
 		{Path: "/tarife", Title: "Tarife verwalten", Description: "Ein klarer Preis für jeden Verleihzeitraum.", Step: "Tarife"},
-		{Path: "/ausleihe", Title: "Neue Ausleihe", Description: "Vom verfügbaren Paar zur nächsten Abfahrt.", Step: "Verleih"},
+		{Path: "/ausleihe", Title: "Neue Ausleihe", Description: "Vom verfügbaren Fahrrad zur nächsten Fahrt.", Step: "Verleih"},
 	}
 	mux := http.NewServeMux()
 	registerAPI(mux, state)

@@ -27,26 +27,26 @@ func TestMVPAcceptanceWorkflow(t *testing.T) {
 					t.Fatal(err)
 				}
 				baseline := s.Dashboard()
-				expect := func(addedSkis, addedPeople, rented int) {
+				expect := func(addedBikes, addedPeople, rented int) {
 					t.Helper()
 					w := call(t, app, "GET", "/api/dashboard", "", nil, 200)
 					var got store.DashboardCounts
 					if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil {
 						t.Fatal(err)
 					}
-					want := store.DashboardCounts{AvailableSkis: baseline.TotalSkis + addedSkis - rented, RentedSkis: rented, TotalSkis: baseline.TotalSkis + addedSkis, RegisteredPeople: baseline.RegisteredPeople + addedPeople}
+					want := store.DashboardCounts{AvailableBikes: baseline.TotalBikes + addedBikes - rented, RentedBikes: rented, TotalBikes: baseline.TotalBikes + addedBikes, RegisteredPeople: baseline.RegisteredPeople + addedPeople}
 					if got != want {
 						t.Fatalf("dashboard=%+v want=%+v", got, want)
 					}
 				}
 				expect(0, 0, 0)
-				skiResponse := call(t, app, "POST", "/api/ski", "application/json", strings.NewReader(`{"name":"MVP Testpaar"}`), 201)
-				var ski domain.Ski
-				if err := json.Unmarshal(skiResponse.Body.Bytes(), &ski); err != nil {
+				bikeResponse := createBikeHTTP(t, app, "MVP Testfahrrad")
+				var bike domain.Bike
+				if err := json.Unmarshal(bikeResponse.Body.Bytes(), &bike); err != nil {
 					t.Fatal(err)
 				}
-				if ski.ID == "" || ski.Name != "MVP Testpaar" {
-					t.Fatal("missing generated ski data")
+				if bike.ID == "" || bike.Name != "MVP Testfahrrad" {
+					t.Fatal("missing generated bike data")
 				}
 				expect(1, 0, 0)
 				fields := map[string]string{"name": "MVP Testperson", "proof": "manual", "documentType": "Reisepass", "documentNumber": "SYNTHETISCH-MVP"}
@@ -104,7 +104,7 @@ func TestMVPAcceptanceWorkflow(t *testing.T) {
 				if !demo {
 					call(t, app, "PUT", "/api/tarife", "application/json", strings.NewReader(`{"version":0,"pricesCents":[2500,4500,6000],"extraDayCents":1500}`), 200)
 				}
-				input := []byte(bookingBody(person.ID, ski.ID, 1))
+				input := []byte(bookingBody(person.ID, bike.ID, 1))
 				create := func() rentalResponse {
 					t.Helper()
 					w := call(t, app, "POST", "/api/ausleihen", "application/json", bytes.NewReader(input), 201)
@@ -112,7 +112,7 @@ func TestMVPAcceptanceWorkflow(t *testing.T) {
 					if err := json.Unmarshal(w.Body.Bytes(), &rental); err != nil {
 						t.Fatal(err)
 					}
-					if rental.PersonID != person.ID || rental.SkiID != ski.ID || rental.PersonName != person.Name || rental.SkiName != ski.Name || rental.ReturnedAt != nil {
+					if rental.PersonID != person.ID || rental.BikeID != bike.ID || rental.PersonName != person.Name || rental.BikeName != bike.Name || rental.ReturnedAt != nil {
 						t.Fatal("rental references wrong records")
 					}
 					return issueHTTP(t, app, rental.ID)
@@ -121,8 +121,8 @@ func TestMVPAcceptanceWorkflow(t *testing.T) {
 				expect(1, 1, 1)
 				call(t, app, "POST", "/api/ausleihen", "application/json", bytes.NewReader(input), 409)
 				expect(1, 1, 1)
-				available := call(t, app, "GET", "/api/ski/verfuegbar", "", nil, 200)
-				if strings.Contains(available.Body.String(), ski.ID) {
+				available := call(t, app, "GET", "/api/fahrraeder/verfuegbar", "", nil, 200)
+				if strings.Contains(available.Body.String(), bike.ID) {
 					t.Fatal("rented pair still selectable")
 				}
 				path := "/api/ausleihen/" + first.ID + "/rueckgabe"
@@ -133,8 +133,8 @@ func TestMVPAcceptanceWorkflow(t *testing.T) {
 					t.Fatal("repeated return changed timestamp")
 				}
 				expect(1, 1, 0)
-				available = call(t, app, "GET", "/api/ski/verfuegbar", "", nil, 200)
-				if !strings.Contains(available.Body.String(), ski.ID) {
+				available = call(t, app, "GET", "/api/fahrraeder/verfuegbar", "", nil, 200)
+				if !strings.Contains(available.Body.String(), bike.ID) {
 					t.Fatal("returned pair not available")
 				}
 				next := create()
@@ -155,7 +155,7 @@ func TestMVPAcceptanceWorkflow(t *testing.T) {
 					t.Fatal("returned history incomplete")
 				}
 				page := call(t, app, "GET", "/", "", nil, 200)
-				if !strings.Contains(page.Body.String(), fmt.Sprintf(`data-metric="totalSkis">%d</strong>`, baseline.TotalSkis+1)) {
+				if !strings.Contains(page.Body.String(), fmt.Sprintf(`data-metric="totalBikes">%d</strong>`, baseline.TotalBikes+1)) {
 					t.Fatal("HTML dashboard out of sync")
 				}
 				if store.New(demo).Dashboard() != baseline {

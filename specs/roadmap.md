@@ -3,7 +3,8 @@
 ## Vorgehen und aktueller Stand
 
 Phase 0 ist technisch abgeschlossen, geprüft und am 21.10.2026 ausdrücklich
-vom Auftraggeber abgenommen. Die Fahrradfunktionen ab Phase 1 sind noch offen. Als technische Ausgangsbasis dient der vorhandene
+vom Auftraggeber abgenommen. Phase 1 ist implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
+vom Auftraggeber abgenommen. Die Phasen 2 bis 5 sind noch offen. Als technische Ausgangsbasis dient der vorhandene
 SkiRental-Stand bis einschließlich Phase 5. Dessen dokumentierte Abnahmen sind
 historische Nachweise für SkiRental, keine BikeRental-Abnahmen. Diese Roadmap
 ordnet Arbeit nach Abhängigkeiten und enthält keine Terminzusagen.
@@ -12,8 +13,8 @@ Für jede Phase gilt: **Spezifizieren → Aufgaben ableiten → Implementieren �
 Prüfen → Abnehmen**. Vor Codeänderungen entsteht eine Feature-Spezifikation in
 BikeRentals `specs/` mit Nutzerablauf, Datenmodell, Geschäftsregeln, API-Verhalten,
 Fehlerfällen und überprüfbaren Akzeptanzkriterien. Die nachfolgend genannten
-Feature-Dateien ab Phase 1 sind geplant und noch nicht angelegt. Die
-Grundlagenspezifikation aus Phase 0 ist bereits vorhanden.
+Feature-Dateien ab Phase 2 sind geplant und noch nicht angelegt. Spezifikationen
+und Prüfnachweise der Phasen 0 und 1 sind bereits vorhanden.
 
 Technische Prüfergebnisse und ausdrückliche Auftraggeberabnahme werden getrennt
 festgehalten. Nach Abschluss und ausdrücklicher Auftraggeberabnahme jeder Phase
@@ -49,7 +50,9 @@ in `SkiRental/`; Git für BikeRental und Verfassung liegt im obersten Verzeichni
 
 ## Phase 1 – Fahrradverwaltung und Bilder
 
-**Status:** Offen. **Geplante Spezifikation:** `01-fahrradverwaltung.md`.
+**Status:** Implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
+vom Auftraggeber abgenommen: „phase 1 ist hiermit abgenommen“.
+**Spezifikation und Prüfnachweis:** [01-fahrradverwaltung.md](01-fahrradverwaltung.md).
 
 **Ergebnis:** Wiederverwendete Inventarverwaltung für Fahrräder und bestehende
 Personenverwaltung als Grundlage für B-01, B-03 und B-05.

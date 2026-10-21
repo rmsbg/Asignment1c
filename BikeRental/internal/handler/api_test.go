@@ -62,20 +62,18 @@ func TestManagementAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ski := call(t, app, "POST", "/api/ski", "application/json", strings.NewReader(`{"name":" Test Ski "}`), 201)
-	var sk domain.Ski
-	_ = json.Unmarshal(ski.Body.Bytes(), &sk)
-	if sk.Name != "Test Ski" || ski.Header().Get("Location") != "/api/ski/"+sk.ID {
-		t.Fatal("ski creation")
+	bike := bikeRequest(t, app, "POST", "/api/fahrraeder", map[string]string{"name": " Test Bike ", "type": "MTB", "image": "replace"}, bikePNG(t), "image/png", 201)
+	var sk domain.Bike
+	_ = json.Unmarshal(bike.Body.Bytes(), &sk)
+	if sk.Name != "Test Bike" || bike.Header().Get("Location") != "/api/fahrraeder/"+sk.ID {
+		t.Fatal("bike creation")
 	}
-	call(t, app, "GET", "/api/ski/"+sk.ID, "", nil, 200)
-	call(t, app, "PUT", "/api/ski/"+sk.ID, "application/json", strings.NewReader(`{"name":"Edited"}`), 200)
-	call(t, app, "PUT", "/api/ski/"+sk.ID, "application/json", strings.NewReader(`{"name":" "}`), 400)
-	call(t, app, "POST", "/api/ski", "application/json", strings.NewReader(`{"name":"X","id":"override"}`), 400)
-	call(t, app, "POST", "/api/ski", "application/json", strings.NewReader(`{"name":"X"} {}`), 400)
-	call(t, app, "POST", "/api/ski", "text/plain", strings.NewReader(`{}`), 415)
-	call(t, app, "GET", "/api/ski/missing", "", nil, 404)
-	call(t, app, "PUT", "/api/ski/missing", "application/json", strings.NewReader(`{"name":"X"}`), 404)
+	call(t, app, "GET", "/api/fahrraeder/"+sk.ID, "", nil, 200)
+	bikeRequest(t, app, "PUT", "/api/fahrraeder/"+sk.ID, map[string]string{"name": "Edited", "type": "Rennrad", "image": "keep"}, nil, "", 200)
+	bikeRequest(t, app, "PUT", "/api/fahrraeder/"+sk.ID, map[string]string{"name": " ", "type": "Rennrad", "image": "keep"}, nil, "", 400)
+	call(t, app, "POST", "/api/fahrraeder", "application/json", strings.NewReader(`{"name":"X"}`), 415)
+	call(t, app, "GET", "/api/fahrraeder/missing", "", nil, 404)
+	bikeRequest(t, app, "PUT", "/api/fahrraeder/missing", map[string]string{"name": "X", "type": "MTB", "image": "keep"}, nil, "", 404)
 	fields := map[string]string{"name": " Synthetic Person ", "proof": "manual", "documentType": "Sonstiger Ausweis", "documentDescription": "Testdokument", "documentNumber": "TEST-42"}
 	created := personRequest(t, app, "POST", "/api/personen", fields, nil, "", 201)
 	var p domain.Person
@@ -178,10 +176,10 @@ func TestMultipartBoundariesAndPhotoCreation(t *testing.T) {
 	call(t, app, "PUT", path, writer.FormDataContentType(), &body, 400)
 	call(t, app, "PUT", path, "multipart/form-data; boundary=broken", strings.NewReader("truncated"), 400)
 	personRequest(t, app, "PUT", path, map[string]string{"name": strings.Repeat("x", 9000), "proof": "keep"}, nil, "", 413)
-	call(t, app, "POST", "/api/ski", "application/json", strings.NewReader(`{"name":"`+strings.Repeat("x", 70000)+`"}`), 413)
+	bikeRequest(t, app, "POST", "/api/fahrraeder", map[string]string{"name": strings.Repeat("x", 70000), "type": "MTB", "image": "replace"}, nil, "", 413)
 	if !reflect.DeepEqual(before, s.Snapshot()) {
 		t.Fatal("malformed request mutated state")
 	}
-	call(t, app, "GET", "/api/ski", "", nil, 200)
+	call(t, app, "GET", "/api/fahrraeder", "", nil, 200)
 	call(t, app, "GET", path+"/foto", "", nil, 200)
 }

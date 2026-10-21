@@ -17,7 +17,7 @@ func TestPagesInBothModes(t *testing.T) {
 			t.Fatal(err)
 		}
 		for path, title := range map[string]string{
-			"/": "Dashboard", "/ski": "Ski verwalten",
+			"/": "Dashboard", "/fahrraeder": "Fahrräder verwalten",
 			"/tarife": "Tarife verwalten", "/personen": "Personen verwalten", "/ausleihe": "Neue Ausleihe",
 		} {
 			t.Run(fmt.Sprintf("%s/demo=%t", path, demo), func(t *testing.T) {
@@ -29,8 +29,8 @@ func TestPagesInBothModes(t *testing.T) {
 				body := r.Body.String()
 				for _, text := range []string{
 					"<h1>" + title + "</h1>", `lang="de"`, `href="#inhalt"`,
-					`href="/"`, `href="/ski"`, `href="/personen"`, `href="/ausleihe"`,
-					"BikeRental · Phase 0.", "Technischer Ausgangsstand von SkiRental.",
+					`href="/"`, `href="/fahrraeder"`, `href="/personen"`, `href="/ausleihe"`,
+					"BikeRental · Phase 1.", "Fahrradverwaltung mit Bildern.",
 					"Arbeitsspeicher", "beim Neustart verloren", `href="` + path + `" aria-current="page"`,
 				} {
 					if !strings.Contains(body, text) {
@@ -67,7 +67,7 @@ func TestHTTPBoundariesAndAssets(t *testing.T) {
 		status int
 	}{
 		{"GET", "/unbekannt", 404},
-		{"GET", "/ski/unbekannt", 404},
+		{"GET", "/fahrraeder/unbekannt", 404},
 		{"GET", "/page.gohtml", 404},
 		{"POST", "/", 405},
 		{"POST", "/ausleihe", 405},

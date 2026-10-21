@@ -164,3 +164,24 @@ dd { margin: 5px 0 0; }
 #tariff-form .actions { margin-bottom: 24px; }
 #tariff-error:empty { display: none; }
 @media (max-width: 760px) { .date-fields { grid-template-columns: 1fr; gap: 0; } }
+
+/* Shared inventory images and keyboard-accessible rental choices. */
+.bike-picture{margin:0;display:block;background:#f0f1e7;border-radius:12px;overflow:hidden;max-width:640px}
+.bike-picture img{display:block;width:100%;aspect-ratio:16/9;object-fit:contain}
+.bike-picture img[hidden]{display:none}
+.bike-picture figcaption,.bike-picture small{padding:16px;color:#72412d}
+.bike-type{display:block;color:var(--muted,#52685f);font-size:.9rem;margin:6px 0}
+.record-list .bike-picture{width:120px;flex-shrink:0}
+.bike-choice-group{margin:20px 0;padding:16px;border:1px solid #cbd3c5;border-radius:12px;min-width:0}
+.bike-choice-group legend{font-weight:700;padding:0 6px}
+#bike-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:16px}
+.bike-choice{display:flex;gap:10px;border:2px solid #d5dbcf;border-radius:14px;padding:12px;cursor:pointer;align-items:flex-start;background:#fff}
+.bike-choice:has(input:checked){border-color:#2e6352;background:#f0f6ef}
+.bike-choice:focus-within{outline:3px solid #94681c;outline-offset:3px}
+.bike-choice input[type=radio]{width:20px;height:20px;flex:0 0 20px;margin-top:8px;accent-color:#2e6352}
+.bike-choice-content{min-width:0;flex:1;display:grid;gap:6px;overflow-wrap:anywhere}
+.bike-choice-group:disabled{opacity:.75}
+@media(max-width:520px){.record-list .bike-picture{width:80px}.record-list a{gap:8px;flex-wrap:wrap}}
+
+.record-list a.inventory-bike{grid-template-columns:100px minmax(0,1fr) 120px 20px}
+@media(max-width:760px){.record-list a.inventory-bike{grid-template-columns:minmax(0,1fr) 80px 20px}.record-list .bike-picture{width:80px}}

@@ -33,7 +33,7 @@ func apiError(w http.ResponseWriter, err error) {
 		fields = domain.ValidationErrors{conflict.Field: conflict.Message}
 	} else if errors.Is(err, store.ErrUnavailable) {
 		status = 409
-		fields = domain.ValidationErrors{"skiID": store.ErrUnavailable.Error()}
+		fields = domain.ValidationErrors{"bikeID": store.ErrUnavailable.Error()}
 	} else if errors.Is(err, store.ErrNotFound) {
 		status = 404
 		fields["form"] = "Der Datensatz wurde nicht gefunden."
@@ -53,39 +53,43 @@ func exposePerson(p domain.Person) domain.Person {
 	return p
 }
 func registerAPI(mux *http.ServeMux, s *store.Store) {
-	mux.HandleFunc("GET /api/ski", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, s.Skis()) })
-	mux.HandleFunc("GET /api/ski/{id}", func(w http.ResponseWriter, r *http.Request) {
-		p, err := s.Ski(r.PathValue("id"))
+	mux.HandleFunc("GET /api/fahrraeder", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, s.Bikes()) })
+	mux.HandleFunc("GET /api/fahrraeder/{id}", func(w http.ResponseWriter, r *http.Request) {
+		p, err := s.Bike(r.PathValue("id"))
 		if err != nil {
 			apiError(w, err)
 			return
 		}
 		writeJSON(w, 200, p)
 	})
-	skiWrite := func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/fahrraeder/{id}/foto", func(w http.ResponseWriter, r *http.Request) {
+		b, err := s.Bike(r.PathValue("id"))
+		if err != nil {
+			apiError(w, err)
+			return
+		}
+		w.Header().Set("Content-Type", b.PhotoType)
+		if r.Method != http.MethodHead {
+			_, _ = w.Write(b.Photo)
+		}
+	})
+	bikeWrite := func(w http.ResponseWriter, r *http.Request) {
 		media, _, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
-		if media != "application/json" {
-			writeJSON(w, 415, map[string]any{"errors": domain.ValidationErrors{"form": "JSON erwartet."}})
+		if media != "multipart/form-data" {
+			writeJSON(w, 415, map[string]any{"errors": domain.ValidationErrors{"form": "Multipart-Formular erwartet."}})
 			return
 		}
-		r.Body = http.MaxBytesReader(w, r.Body, 64*1024)
-		var input struct {
-			Name string `json:"name"`
-		}
-		dec := json.NewDecoder(r.Body)
-		dec.DisallowUnknownFields()
-		if err := dec.Decode(&input); err != nil {
+		fields, photo, photoType, seenPhoto, err := readMultipart(w, r, []string{"name", "type", "image"})
+		if err != nil {
 			apiError(w, err)
 			return
 		}
-		if err := dec.Decode(new(any)); err != io.EOF {
-			if err == nil {
-				err = errors.New("extra JSON")
-			}
-			apiError(w, err)
+		keep := fields["image"] == "keep"
+		if (keep && seenPhoto) || (!keep && fields["image"] != "replace") {
+			apiError(w, domain.ValidationErrors{"image": "Bitte Bild beibehalten oder durch eine neue Datei ersetzen."})
 			return
 		}
-		p, err := s.SaveSki(r.PathValue("id"), input.Name)
+		b, err := s.SaveBike(r.PathValue("id"), domain.Bike{Name: fields["name"], Type: fields["type"], Photo: photo, PhotoType: photoType}, keep)
 		if err != nil {
 			apiError(w, err)
 			return
@@ -93,12 +97,12 @@ func registerAPI(mux *http.ServeMux, s *store.Store) {
 		status := 200
 		if r.Method == "POST" {
 			status = 201
-			w.Header().Set("Location", "/api/ski/"+p.ID)
+			w.Header().Set("Location", "/api/fahrraeder/"+b.ID)
 		}
-		writeJSON(w, status, p)
+		writeJSON(w, status, b)
 	}
-	mux.HandleFunc("POST /api/ski", skiWrite)
-	mux.HandleFunc("PUT /api/ski/{id}", skiWrite)
+	mux.HandleFunc("POST /api/fahrraeder", bikeWrite)
+	mux.HandleFunc("PUT /api/fahrraeder/{id}", bikeWrite)
 	mux.HandleFunc("GET /api/personen", func(w http.ResponseWriter, r *http.Request) {
 		// A dedicated DTO guarantees that even empty identity fields are absent.
 		type summary struct {
@@ -160,71 +164,85 @@ func registerAPI(mux *http.ServeMux, s *store.Store) {
 	mux.HandleFunc("PUT /api/personen/{id}", personWrite)
 }
 
-func readPerson(w http.ResponseWriter, r *http.Request) (domain.Person, bool, error) {
-	var p domain.Person
+// readMultipart reads a bounded form directly into memory, never temporary files.
+func readMultipart(w http.ResponseWriter, r *http.Request, allowed []string) (map[string]string, []byte, string, bool, error) {
+	fields := map[string]string{}
+	seen := map[string]bool{}
+	var photo []byte
+	media := ""
+	fail := func(err error) (map[string]string, []byte, string, bool, error) { return nil, nil, "", false, err }
 	r.Body = http.MaxBytesReader(w, r.Body, domain.MaxPhotoBytes+64*1024)
 	reader, err := r.MultipartReader()
 	if err != nil {
-		return p, false, err
+		return fail(err)
 	}
-	fields := map[string]string{}
-	seen := map[string]bool{}
 	for {
 		part, err := reader.NextPart()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			return p, false, err
+			return fail(err)
 		}
 		name := part.FormName()
 		if seen[name] {
-			return p, false, domain.ValidationErrors{"form": "Doppelte Formularfelder sind ungültig."}
+			return fail(domain.ValidationErrors{"form": "Doppelte Formularfelder sind ungültig."})
 		}
 		seen[name] = true
+		valid := name == "photo"
+		for _, key := range allowed {
+			if name == key {
+				valid = true
+			}
+		}
+		if !valid {
+			return fail(domain.ValidationErrors{"form": "Unbekanntes Formularfeld."})
+		}
 		limit := int64(8192)
 		if name == "photo" {
-			limit = domain.MaxPhotoBytes + 1
+			limit = domain.MaxPhotoBytes
 		}
 		data, err := io.ReadAll(io.LimitReader(part, limit+1))
 		if err != nil {
-			return p, false, err
+			return fail(err)
 		}
-		if int64(len(data)) > limit || (name == "photo" && len(data) > domain.MaxPhotoBytes) {
-			return p, false, &http.MaxBytesError{Limit: domain.MaxPhotoBytes}
+		if int64(len(data)) > limit {
+			return fail(&http.MaxBytesError{Limit: domain.MaxPhotoBytes})
 		}
 		if name == "photo" {
-			p.Photo = data
-			p.PhotoType, _, _ = mime.ParseMediaType(part.Header.Get("Content-Type"))
+			photo = data
+			media, _, _ = mime.ParseMediaType(part.Header.Get("Content-Type"))
 		} else {
-			switch name {
-			case "name", "proof", "documentType", "documentDescription", "documentNumber":
-				fields[name] = string(data)
-			default:
-				return p, false, domain.ValidationErrors{"form": "Unbekanntes Formularfeld."}
-			}
 			if part.FileName() != "" {
-				return p, false, domain.ValidationErrors{"form": "Unerwartete Datei."}
+				return fail(domain.ValidationErrors{"form": "Unerwartete Datei."})
 			}
+			fields[name] = string(data)
 		}
-		_ = part.Close()
+		if err := part.Close(); err != nil {
+			return fail(err)
+		}
 	}
-	p.Name = fields["name"]
-	p.DocumentType = fields["documentType"]
-	p.DocumentDescription = fields["documentDescription"]
-	p.DocumentNumber = fields["documentNumber"]
+	return fields, photo, media, seen["photo"], nil
+}
+
+func readPerson(w http.ResponseWriter, r *http.Request) (domain.Person, bool, error) {
+	fields, photo, media, seenPhoto, err := readMultipart(w, r, []string{"name", "proof", "documentType", "documentDescription", "documentNumber"})
+	if err != nil {
+		return domain.Person{}, false, err
+	}
+	p := domain.Person{Name: fields["name"], DocumentType: fields["documentType"], DocumentDescription: fields["documentDescription"], DocumentNumber: fields["documentNumber"], Photo: photo, PhotoType: media}
 	switch fields["proof"] {
 	case "keep":
-		if seen["photo"] {
+		if seenPhoto {
 			return p, false, domain.ValidationErrors{"proof": "Zum Beibehalten bitte keinen neuen Nachweis senden."}
 		}
 		return p, true, nil
 	case "manual":
-		if seen["photo"] {
+		if seenPhoto {
 			return p, false, domain.ValidationErrors{"proof": "Bitte genau eine Nachweisart verwenden."}
 		}
 	case "photo":
-		if len(p.Photo) == 0 {
+		if len(photo) == 0 {
 			return p, false, domain.ValidationErrors{"photo": "Bitte ein Foto auswählen."}
 		}
 	default:

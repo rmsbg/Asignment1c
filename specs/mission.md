@@ -13,7 +13,8 @@ Ausgangspunkt ist der vorhandene SkiRental-Stand einschließlich Terminbuchungen
 und Preisen aus Phase 5, beschrieben in [dessen Verfassung](../SkiRental/specs/mission.md).
 [tech-stack.md](tech-stack.md) legt die technischen Leitplanken fest,
 [roadmap.md](roadmap.md) die Umsetzung und Abnahme. Diese Dokumente beschreiben
-den BikeRental-Zielzustand; sie behaupten keine bereits erfolgte Umsetzung oder Abnahme.
+den BikeRental-Zielzustand; den tatsächlichen Umsetzungs- und Abnahmestand
+führt die Roadmap.
 
 ## Verbindliche Prinzipien
 

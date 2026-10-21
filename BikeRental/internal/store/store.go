@@ -2,6 +2,7 @@
 package store
 
 import (
+	"bikerental/web"
 	"bytes"
 	"errors"
 	"fmt"
@@ -17,18 +18,18 @@ type Store struct {
 	now        func() time.Time
 	tariff     domain.Tariff
 	nextPerson uint64
-	nextSki    uint64
+	nextBike   uint64
 	nextRental uint64
 	demo       bool
 	people     map[string]domain.Person
-	skis       map[string]domain.Ski
+	bikes      map[string]domain.Bike
 	rentals    map[string]domain.Rental
 }
 
 // Snapshot contains independent value copies in stable ID order.
 type Snapshot struct {
 	People  []domain.Person
-	Skis    []domain.Ski
+	Bikes   []domain.Bike
 	Rentals []domain.Rental
 }
 
@@ -38,7 +39,7 @@ func New(demo bool) *Store {
 		now:     time.Now,
 		tariff:  domain.Tariff{PricesCents: []int64{}},
 		people:  make(map[string]domain.Person),
-		skis:    make(map[string]domain.Ski),
+		bikes:   make(map[string]domain.Bike),
 		rentals: make(map[string]domain.Rental),
 	}
 	if demo {
@@ -70,12 +71,14 @@ func (s *Store) SeedDemo() {
 	if _, exists := s.people[person.ID]; !exists {
 		s.people[person.ID] = person
 	}
-	for _, ski := range []domain.Ski{
-		{ID: "demo-ski-01", Name: "Demo Ski-Paar 01"},
-		{ID: "demo-ski-02", Name: "Demo Ski-Paar 02"},
-	} {
-		if _, exists := s.skis[ski.ID]; !exists {
-			s.skis[ski.ID] = ski
+	for i, kind := range []string{"Downhill", "MTB", "Rennrad"} {
+		id := fmt.Sprintf("demo-bike-%02d", i+1)
+		if _, exists := s.bikes[id]; !exists {
+			photo, err := web.Files.ReadFile(fmt.Sprintf("assets/demo/%s.png", kind))
+			if err != nil {
+				panic(fmt.Sprintf("Eingebettetes Demobild fehlt: %v", err))
+			}
+			s.bikes[id] = domain.Bike{ID: id, Name: "Demo " + kind, Type: kind, Photo: photo, PhotoType: "image/png"}
 		}
 	}
 }
@@ -85,25 +88,31 @@ func (s *Store) Snapshot() Snapshot {
 	defer s.mu.RUnlock()
 	result := Snapshot{
 		People:  make([]domain.Person, 0, len(s.people)),
-		Skis:    make([]domain.Ski, 0, len(s.skis)),
+		Bikes:   make([]domain.Bike, 0, len(s.bikes)),
 		Rentals: make([]domain.Rental, 0, len(s.rentals)),
 	}
 	for _, person := range s.people {
 		result.People = append(result.People, clonePerson(person))
 	}
-	for _, ski := range s.skis {
-		result.Skis = append(result.Skis, ski)
+	for _, bike := range s.bikes {
+		result.Bikes = append(result.Bikes, cloneBike(bike))
 	}
 	for _, rental := range s.rentals {
 		result.Rentals = append(result.Rentals, rental)
 	}
 	sort.Slice(result.People, func(i, j int) bool { return result.People[i].ID < result.People[j].ID })
-	sort.Slice(result.Skis, func(i, j int) bool { return result.Skis[i].ID < result.Skis[j].ID })
+	sort.Slice(result.Bikes, func(i, j int) bool { return result.Bikes[i].ID < result.Bikes[j].ID })
 	sort.Slice(result.Rentals, func(i, j int) bool { return result.Rentals[i].ID < result.Rentals[j].ID })
 	return result
 }
 
 var ErrNotFound = errors.New("Datensatz nicht gefunden")
+
+func cloneBike(b domain.Bike) domain.Bike {
+	b.Photo = bytes.Clone(b.Photo)
+	b.PhotoURL = "/api/fahrraeder/" + b.ID + "/foto"
+	return b
+}
 
 func clonePerson(p domain.Person) domain.Person { p.Photo = bytes.Clone(p.Photo); return p }
 
@@ -116,31 +125,42 @@ func (s *Store) Person(id string) (domain.Person, error) {
 	}
 	return clonePerson(p), nil
 }
-func (s *Store) Ski(id string) (domain.Ski, error) {
+func (s *Store) Bike(id string) (domain.Bike, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	p, ok := s.skis[id]
+	b, ok := s.bikes[id]
 	if !ok {
-		return domain.Ski{}, ErrNotFound
+		return domain.Bike{}, ErrNotFound
 	}
-	return p, nil
+	return cloneBike(b), nil
 }
-func (s *Store) SaveSki(id, name string) (domain.Ski, error) {
-	name, err := domain.ValidateName(name)
-	if err != nil {
-		return domain.Ski{}, err
-	}
+
+// SaveBike validates and replaces all fields atomically, retaining the old image
+// only when explicitly requested without an accompanying upload.
+func (s *Store) SaveBike(id string, b domain.Bike, keepPhoto bool) (domain.Bike, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if id == "" {
-		s.nextSki++
-		id = fmt.Sprintf("ski-%06d", s.nextSki)
-	} else if _, ok := s.skis[id]; !ok {
-		return domain.Ski{}, ErrNotFound
+	old, exists := s.bikes[id]
+	if id != "" && !exists {
+		return domain.Bike{}, ErrNotFound
 	}
-	p := domain.Ski{ID: id, Name: name}
-	s.skis[id] = p
-	return p, nil
+	if keepPhoto {
+		if !exists || len(b.Photo) > 0 || b.PhotoType != "" {
+			return domain.Bike{}, domain.ValidationErrors{"image": "Ein vorhandenes Bild kann nur ohne neue Datei beibehalten werden."}
+		}
+		b.Photo, b.PhotoType = old.Photo, old.PhotoType
+	}
+	b, err := domain.ValidateBike(b)
+	if err != nil {
+		return domain.Bike{}, err
+	}
+	if id == "" {
+		s.nextBike++
+		id = fmt.Sprintf("bike-%06d", s.nextBike)
+	}
+	b.ID = id
+	s.bikes[id] = b
+	return cloneBike(b), nil
 }
 
 // SavePerson validates the entire candidate under the same lock as replacement.
@@ -185,12 +205,12 @@ func (s *Store) People() []domain.Person {
 	sort.Slice(result, func(i, j int) bool { return result[i].ID < result[j].ID })
 	return result
 }
-func (s *Store) Skis() []domain.Ski {
+func (s *Store) Bikes() []domain.Bike {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	result := make([]domain.Ski, 0, len(s.skis))
-	for _, p := range s.skis {
-		result = append(result, p)
+	result := make([]domain.Bike, 0, len(s.bikes))
+	for _, p := range s.bikes {
+		result = append(result, cloneBike(p))
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].ID < result[j].ID })
 	return result

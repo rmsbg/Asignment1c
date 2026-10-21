@@ -10,6 +10,7 @@ import (
 	"sync"
 	"testing"
 
+	"bikerental/internal/domain"
 	"bikerental/internal/store"
 )
 
@@ -19,7 +20,7 @@ func TestRentalAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	body := bookingBody("demo-person-01", "demo-ski-01", 1)
+	body := bookingBody("demo-person-01", "demo-bike-01", 1)
 	empty := call(t, app, "GET", "/api/ausleihen", "", nil, 200)
 	if strings.TrimSpace(empty.Body.String()) != "[]" {
 		t.Fatal("expected empty list")
@@ -30,11 +31,11 @@ func TestRentalAPI(t *testing.T) {
 		status int
 		field  string
 	}{
-		{`{}`, 400, "personID"}, {`{"personID":"demo-person-01"}`, 400, "skiID"},
+		{`{}`, 400, "personID"}, {`{"personID":"demo-person-01"}`, 400, "bikeID"},
 		{strings.Replace(body, "demo-person-01", "missing", 1), 404, "personID"},
-		{strings.Replace(body, "demo-ski-01", "missing", 1), 404, "skiID"},
-		{`{"personID":"demo-person-01","skiID":"demo-ski-01","id":"override"}`, 400, "form"},
-		{`{"personID":"demo-person-01","skiID":"demo-ski-01","rentedAt":"override"}`, 400, "form"},
+		{strings.Replace(body, "demo-bike-01", "missing", 1), 404, "bikeID"},
+		{`{"personID":"demo-person-01","bikeID":"demo-bike-01","id":"override"}`, 400, "form"},
+		{`{"personID":"demo-person-01","bikeID":"demo-bike-01","rentedAt":"override"}`, 400, "form"},
 		{body + ` {}`, 400, "form"}, {`broken`, 400, "form"}, {`{"personID":"` + strings.Repeat("x", 70000) + `"}`, 413, "form"},
 	} {
 		w := call(t, app, "POST", "/api/ausleihen", "application/json", strings.NewReader(tc.body), tc.status)
@@ -58,18 +59,19 @@ func TestRentalAPI(t *testing.T) {
 	call(t, app, "GET", path, "", nil, 200)
 	issueHTTP(t, app, rental.ID)
 	call(t, app, "POST", "/api/ausleihen", "application/json", strings.NewReader(body), 409)
-	available := call(t, app, "GET", "/api/ski/verfuegbar", "", nil, 200)
-	if strings.Contains(available.Body.String(), "demo-ski-01") {
-		t.Fatal("rented ski offered")
+	available := call(t, app, "GET", "/api/fahrraeder/verfuegbar", "", nil, 200)
+	if strings.Contains(available.Body.String(), "demo-bike-01") {
+		t.Fatal("rented bike offered")
 	}
 	// Multiple active rentals for the same person are valid.
-	second := call(t, app, "POST", "/api/ausleihen", "application/json", strings.NewReader(strings.Replace(body, "demo-ski-01", "demo-ski-02", 1)), 201)
+	second := call(t, app, "POST", "/api/ausleihen", "application/json", strings.NewReader(strings.Replace(body, "demo-bike-01", "demo-bike-02", 1)), 201)
 	var secondRental rentalResponse
 	_ = json.Unmarshal(second.Body.Bytes(), &secondRental)
 	issueHTTP(t, app, secondRental.ID)
-	available = call(t, app, "GET", "/api/ski/verfuegbar", "", nil, 200)
-	if strings.TrimSpace(available.Body.String()) != "[]" {
-		t.Fatal("expected no available skis")
+	available = call(t, app, "GET", "/api/fahrraeder/verfuegbar", "", nil, 200)
+	var remaining []domain.Bike
+	if err := json.Unmarshal(available.Body.Bytes(), &remaining); err != nil || len(remaining) != 1 || remaining[0].ID != "demo-bike-03" {
+		t.Fatal("expected only the third demo bike to remain available")
 	}
 	before = s.Snapshot()
 	call(t, app, "PUT", path+"/rueckgabe", "application/json", strings.NewReader(`{"returnedAt":"override"}`), 400)
@@ -86,8 +88,9 @@ func TestRentalAPI(t *testing.T) {
 	_ = json.Unmarshal(replacement.Body.Bytes(), &replacementRental)
 	issueHTTP(t, app, replacementRental.ID)
 	call(t, app, "PUT", path+"/rueckgabe", "", nil, 200)
-	available = call(t, app, "GET", "/api/ski/verfuegbar", "", nil, 200)
-	if strings.TrimSpace(available.Body.String()) != "[]" {
+	available = call(t, app, "GET", "/api/fahrraeder/verfuegbar", "", nil, 200)
+	remaining = nil
+	if err := json.Unmarshal(available.Body.Bytes(), &remaining); err != nil || len(remaining) != 1 || remaining[0].ID != "demo-bike-03" {
 		t.Fatal("old return released new rental")
 	}
 	for _, p := range []string{"/api/ausleihen", path} {
@@ -112,7 +115,7 @@ func TestConcurrentRentalHTTP(t *testing.T) {
 	codes := make(chan int, 24)
 	for range 24 {
 		wg.Go(func() {
-			r := httptest.NewRequest(http.MethodPost, "/api/ausleihen", strings.NewReader(bookingBody("demo-person-01", "demo-ski-01", 1)))
+			r := httptest.NewRequest(http.MethodPost, "/api/ausleihen", strings.NewReader(bookingBody("demo-person-01", "demo-bike-01", 1)))
 			r.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
 			app.ServeHTTP(w, r)

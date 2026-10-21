@@ -6,13 +6,13 @@ import (
 )
 
 func TestRentalReferencesAndActivity(t *testing.T) {
-	for _, ids := range [][2]string{{"", ""}, {" ", "ski"}, {"person", " "}} {
+	for _, ids := range [][2]string{{"", ""}, {" ", "bike"}, {"person", " "}} {
 		if _, _, err := ValidateRentalReferences(ids[0], ids[1]); err == nil {
 			t.Fatal("missing reference accepted")
 		}
 	}
-	p, s, err := ValidateRentalReferences(" person ", " ski ")
-	if err != nil || p != "person" || s != "ski" {
+	p, s, err := ValidateRentalReferences(" person ", " bike ")
+	if err != nil || p != "person" || s != "bike" {
 		t.Fatal("references not trimmed")
 	}
 	r := Rental{}

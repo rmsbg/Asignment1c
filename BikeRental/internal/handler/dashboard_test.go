@@ -18,7 +18,7 @@ func TestDashboardAPIAndHTML(t *testing.T) {
 		}
 		want := store.DashboardCounts{}
 		if demo {
-			want = store.DashboardCounts{AvailableSkis: 2, TotalSkis: 2, RegisteredPeople: 1}
+			want = store.DashboardCounts{AvailableBikes: 3, TotalBikes: 3, RegisteredPeople: 1}
 		}
 		w := call(t, app, "GET", "/api/dashboard", "", nil, 200)
 		var got store.DashboardCounts
@@ -33,7 +33,7 @@ func TestDashboardAPIAndHTML(t *testing.T) {
 		if len(fields) != 4 {
 			t.Fatal("unexpected fields in dashboard response")
 		}
-		for _, key := range []string{"availableSkis", "rentedSkis", "totalSkis", "registeredPeople"} {
+		for _, key := range []string{"availableBikes", "rentedBikes", "totalBikes", "registeredPeople"} {
 			if _, ok := fields[key]; !ok {
 				t.Fatal("missing count")
 			}
@@ -44,7 +44,7 @@ func TestDashboardAPIAndHTML(t *testing.T) {
 				t.Fatal("dashboard exposes identity data")
 			}
 		}
-		for _, text := range []string{`id="dashboard"`, `data-metric="availableSkis"`, `data-metric="rentedSkis"`, `data-metric="totalSkis"`, `data-metric="registeredPeople"`, `/assets/dashboard.js`, `id="dashboard-status"`, `href="/ski"`, `href="/personen"`, `href="/ausleihe"`} {
+		for _, text := range []string{`id="dashboard"`, `data-metric="availableBikes"`, `data-metric="rentedBikes"`, `data-metric="totalBikes"`, `data-metric="registeredPeople"`, `/assets/dashboard.js`, `id="dashboard-status"`, `href="/fahrraeder"`, `href="/personen"`, `href="/ausleihe"`} {
 			if !strings.Contains(html, text) {
 				t.Fatalf("missing dashboard UI: %s", text)
 			}
@@ -75,23 +75,23 @@ func TestDashboardTracksHTTPWorkflow(t *testing.T) {
 		}
 	}
 	personRequest(t, app, "POST", "/api/personen", map[string]string{"name": "Dashboard Testperson", "proof": "manual", "documentType": "Reisepass", "documentNumber": "SYNTHETISCH-DASH"}, nil, "", 201)
-	check(store.DashboardCounts{AvailableSkis: 2, TotalSkis: 2, RegisteredPeople: 2})
-	call(t, app, "POST", "/api/ski", "application/json", strings.NewReader(`{"name":"Dashboard Testpaar"}`), 201)
-	check(store.DashboardCounts{AvailableSkis: 3, TotalSkis: 3, RegisteredPeople: 2})
-	body := bookingBody("demo-person-01", "demo-ski-01", 1)
+	check(store.DashboardCounts{AvailableBikes: 3, TotalBikes: 3, RegisteredPeople: 2})
+	createBikeHTTP(t, app, "Dashboard Testfahrrad")
+	check(store.DashboardCounts{AvailableBikes: 4, TotalBikes: 4, RegisteredPeople: 2})
+	body := bookingBody("demo-person-01", "demo-bike-01", 1)
 	w := call(t, app, "POST", "/api/ausleihen", "application/json", strings.NewReader(body), 201)
 	var rental rentalResponse
 	_ = json.Unmarshal(w.Body.Bytes(), &rental)
 	issueHTTP(t, app, rental.ID)
-	check(store.DashboardCounts{AvailableSkis: 2, RentedSkis: 1, TotalSkis: 3, RegisteredPeople: 2})
+	check(store.DashboardCounts{AvailableBikes: 3, RentedBikes: 1, TotalBikes: 4, RegisteredPeople: 2})
 	call(t, app, "POST", "/api/ausleihen", "application/json", strings.NewReader(body), 409)
-	check(store.DashboardCounts{AvailableSkis: 2, RentedSkis: 1, TotalSkis: 3, RegisteredPeople: 2})
+	check(store.DashboardCounts{AvailableBikes: 3, RentedBikes: 1, TotalBikes: 4, RegisteredPeople: 2})
 	call(t, app, "PUT", "/api/ausleihen/"+rental.ID+"/rueckgabe", "", nil, 200)
 	call(t, app, "PUT", "/api/ausleihen/"+rental.ID+"/rueckgabe", "", nil, 200)
-	check(store.DashboardCounts{AvailableSkis: 3, TotalSkis: 3, RegisteredPeople: 2})
+	check(store.DashboardCounts{AvailableBikes: 4, TotalBikes: 4, RegisteredPeople: 2})
 	page := httptest.NewRecorder()
 	app.ServeHTTP(page, httptest.NewRequest("GET", "/", nil))
-	if !strings.Contains(page.Body.String(), `data-metric="totalSkis">3</strong>`) {
+	if !strings.Contains(page.Body.String(), `data-metric="totalBikes">4</strong>`) {
 		t.Fatal("SSR counts stale")
 	}
 }

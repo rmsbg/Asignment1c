@@ -15,9 +15,9 @@ import (
 type rentalResponse struct {
 	ID              string     `json:"id"`
 	PersonID        string     `json:"personID"`
-	SkiID           string     `json:"skiID"`
+	BikeID          string     `json:"bikeID"`
 	PersonName      string     `json:"personName"`
-	SkiName         string     `json:"skiName"`
+	BikeName        string     `json:"bikeName"`
 	CreatedAt       time.Time  `json:"createdAt"`
 	StartsOn        string     `json:"startsOn"`
 	EndsOn          string     `json:"endsOn"`
@@ -39,7 +39,7 @@ func optionalTime(t time.Time) *time.Time {
 }
 func exposeRental(d store.RentalDetails) rentalResponse {
 	r := d.Rental
-	return rentalResponse{ID: r.ID, PersonID: r.PersonID, SkiID: r.SkiID, PersonName: d.PersonName, SkiName: d.SkiName,
+	return rentalResponse{ID: r.ID, PersonID: r.PersonID, BikeID: r.BikeID, PersonName: d.PersonName, BikeName: d.BikeName,
 		CreatedAt: r.CreatedAt, StartsOn: r.StartsOn, EndsOn: r.EndsOn, DurationDays: r.DurationDays, TotalPriceCents: r.TotalPriceCents,
 		TariffVersion: r.TariffVersion, Status: r.Status(d.Today), Overdue: r.Active() && r.EndsOn < d.Today,
 		RentedAt: optionalTime(r.RentedAt), ReturnedAt: optionalTime(r.ReturnedAt), CancelledAt: optionalTime(r.CancelledAt)}
@@ -113,7 +113,7 @@ func registerRentals(mux *http.ServeMux, s *store.Store) {
 		}
 		writeJSON(w, 200, result)
 	})
-	mux.HandleFunc("GET /api/ski/verfuegbar", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/fahrraeder/verfuegbar", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		if q.Has("startsOn") || q.Has("endsOn") {
 			result, err := s.AvailableFor(q.Get("startsOn"), q.Get("endsOn"))
@@ -123,7 +123,7 @@ func registerRentals(mux *http.ServeMux, s *store.Store) {
 			}
 			writeJSON(w, 200, result)
 		} else {
-			writeJSON(w, 200, s.AvailableSkis())
+			writeJSON(w, 200, s.AvailableBikes())
 		}
 	})
 	mux.HandleFunc("GET /api/ausleihen", func(w http.ResponseWriter, r *http.Request) {
@@ -144,7 +144,7 @@ func registerRentals(mux *http.ServeMux, s *store.Store) {
 	mux.HandleFunc("POST /api/ausleihen", func(w http.ResponseWriter, r *http.Request) {
 		var input struct {
 			PersonID      string  `json:"personID"`
-			SkiID         string  `json:"skiID"`
+			BikeID        string  `json:"bikeID"`
 			StartsOn      string  `json:"startsOn"`
 			EndsOn        string  `json:"endsOn"`
 			TariffVersion *uint64 `json:"tariffVersion"`
@@ -152,7 +152,7 @@ func registerRentals(mux *http.ServeMux, s *store.Store) {
 		if !readJSON(w, r, &input) {
 			return
 		}
-		if _, _, err := domain.ValidateRentalReferences(input.PersonID, input.SkiID); err != nil {
+		if _, _, err := domain.ValidateRentalReferences(input.PersonID, input.BikeID); err != nil {
 			apiError(w, err)
 			return
 		}
@@ -160,7 +160,7 @@ func registerRentals(mux *http.ServeMux, s *store.Store) {
 			apiError(w, domain.ValidationErrors{"tariffVersion": "Bitte zuerst den Preis prüfen und bestätigen."})
 			return
 		}
-		result, err := s.CreateRental(input.PersonID, input.SkiID, input.StartsOn, input.EndsOn, *input.TariffVersion)
+		result, err := s.CreateRental(input.PersonID, input.BikeID, input.StartsOn, input.EndsOn, *input.TariffVersion)
 		if err != nil {
 			apiError(w, err)
 			return

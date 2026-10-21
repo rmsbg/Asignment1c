@@ -25,9 +25,10 @@ Das oberste Git-Repository versioniert Arbeitskopie und Dokumentation.
 obersten Repository ausgeschlossen. Herkunft und Wiederverwendung sind in
 [Phase 0](00-grundlagen.md) festgehalten.
 
-Bis zur fachlichen Umstellung verwendet `BikeRental/` noch die Ski-Modelle,
-API-Felder und Demodaten. Die Oberfläche und das Startprotokoll kennzeichnen
-diesen Ausgangsstand. Der folgende Strukturbaum ist relativ zu `BikeRental/`;
+Seit Phase 1 verwendet `BikeRental/` Fahrradmodelle, Fahrrad-API-Felder und
+Demodaten mit drei Typen und Bildern. Eine gemeinsame Tagesstaffel bleibt als
+Übergangslösung bis Phase 2 erhalten; Stundenmiete und Extras sind noch nicht
+implementiert. Der folgende Strukturbaum ist relativ zu `BikeRental/`;
 `specs/` wird zentral eine Ebene darüber gepflegt.
 
 Die übernommene Schichtung bleibt erhalten:
@@ -56,8 +57,9 @@ Schnittstellen oder die sichtbare Oberfläche übernommen werden.
 
 Das Inventarmodell erhält Fahrradtyp und Bildzuordnung. Die Tariflogik wird von
 einem gemeinsamen Tagestarif auf typ- und mietartabhängige Preise erweitert.
-Buchungen benötigen Mietart, vereinbarten Zeitraum, Zusatzleistungen und einen
-nachvollziehbaren Preisstand. Exakte Felder und Endpunkte legt die jeweilige
+Buchungen benötigen im Zielzustand Mietart, vereinbarten Zeitraum, Zusatzleistungen
+und einen nachvollziehbaren Preisstand. Phase 1 verwendet vorerst weiterhin
+Kalenderdaten und den gemeinsamen Tagestarif. Exakte Felder und Endpunkte legt die jeweilige
 Feature-Spezifikation vor der Implementierung fest.
 
 ## Zeit, Preise und Konsistenz
@@ -91,7 +93,8 @@ Dateigröße und dekodierter Inhalt werden serverseitig geprüft. Bild und
 Stammdaten werden bei gemeinsamen Schreiboperationen atomar validiert.
 
 Fahrräder benötigen beim Anlegen ein Bild; es kann später per Upload ersetzt
-werden. Die Detail-API folgt in Phase 1. Bilder erscheinen mit
+werden. Die API ist in [Phase 1](01-fahrradverwaltung.md) spezifiziert: Multipart für
+Fahrrad-Schreibzugriffe, JSON für Metadaten und separate geprüfte Bildantworten. Bilder erscheinen mit
 verständlichem Alternativtext und angepasster Größe im Buchungsablauf. Fehler
 dürfen keine falsche Fahrradzuordnung oder unbemerkte Teilspeicherung erzeugen.
 
@@ -105,8 +108,8 @@ die Oberfläche zeigt verständliche deutsche Fehlermeldungen.
 Loopback-Adresse `http://127.0.0.1:8080`, leerer Normalstart und optionaler
 `-demo`-Start bleiben erhalten. BikeRental-Demodaten sollen alle drei Fahrradtypen,
 geeignete Bilder, synthetische Personen und nachvollziehbare Beispieltarife
-abdecken. Diese Anpassung folgt in den jeweiligen Feature-Phasen; Phase 0 enthält
-noch die SkiRental-Demodaten. Die Oberfläche kennzeichnet Demodaten und Datenverlust
+abdecken. Seit Phase 1 sind die drei Typen mit Bildern vorhanden; der bisherige
+gemeinsame Demotagestarif bleibt bis Phase 2 bestehen. Die Oberfläche kennzeichnet Demodaten und Datenverlust
 beim Neustart.
 
 Aus dem Go-Modulverzeichnis `BikeRental/`:

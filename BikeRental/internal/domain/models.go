@@ -1,4 +1,4 @@
-// Package domain defines the initial SkiRental data model.
+// Package domain defines the BikeRental data model.
 package domain
 
 import "time"
@@ -15,10 +15,14 @@ type Person struct {
 	PhotoURL            string `json:"photoURL,omitempty"`
 }
 
-// Ski represents a pair of skis rented and returned together.
-type Ski struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+// Bike represents a pair of bikes rented and returned together.
+type Bike struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Type      string `json:"type"`
+	Photo     []byte `json:"-"`
+	PhotoType string `json:"-"`
+	PhotoURL  string `json:"photoURL"`
 }
 
 // Rental separates the agreed calendar period from actual issue and return.
@@ -32,7 +36,7 @@ type Rental struct {
 	TariffVersion   uint64
 	CancelledAt     time.Time
 	PersonID        string
-	SkiID           string
+	BikeID          string
 	RentedAt        time.Time
 	ReturnedAt      time.Time
 }

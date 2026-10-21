@@ -8,7 +8,7 @@
  const message = document.querySelector('#message');
  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const types = ['Personalausweis', 'Reisepass', 'Führerschein', 'Sonstiger Ausweis'];
- const label = people ? 'Person' : 'Ski-Paar';
+ const label = people ? 'Person' : 'Fahrrad';
  document.querySelector('.skip-link').addEventListener('click', event => {event.preventDefault();document.querySelector('main').focus();});
  let generation = 0;
  let savedNotice = false;
@@ -33,9 +33,18 @@
   }
   summary.focus();
  }
+ function bikePicture(p) {
+  return `<figure class="bike-picture"><img src="${esc(p.photoURL)}" alt="${esc(p.name)} – ${esc(p.type)}" loading="lazy"><figcaption hidden>Fahrradbild konnte nicht geladen werden.</figcaption></figure>`;
+ }
+ root.addEventListener('error',event=>{
+  if(event.target.matches('.bike-picture img')){event.target.hidden=true;event.target.nextElementSibling.hidden=false;}
+ },true);
+ function bikeFields(p) {
+  return `<div class="field"><label for="type">Fahrradtyp (Pflichtfeld)</label><select id="type" name="type" aria-describedby="error-type"><option value="">Bitte Typ wählen</option>${['Downhill','MTB','Rennrad'].map(t=>`<option${p.type===t?' selected':''}>${t}</option>`).join('')}</select><small class="field-error" id="error-type"></small></div>${p.id?`${bikePicture(p)}<div class="field"><label for="image">Fahrradbild</label><select id="image" name="image" aria-describedby="error-image"><option value="keep">Vorhandenes Bild beibehalten</option><option value="replace">Neues Bild hochladen</option></select><small class="field-error" id="error-image"></small></div>`:'<input type="hidden" name="image" value="replace">'}<div id="bike-photo-fields" class="field"><label for="photo">Fahrradbild (Pflichtfeld)</label><input type="file" id="photo" name="photo" accept="image/jpeg,image/png" aria-describedby="photo-help error-photo"><small id="photo-help">JPEG oder PNG · höchstens 5 MiB und 20 Millionen Pixel</small><small class="field-error" id="error-photo"></small></div>`;
+ }
  function form(p = {}) {
   const editing = !!p.id;
-  content.innerHTML = `<div class="section-heading"><h2>${label} ${editing ? 'bearbeiten' : 'anlegen'}</h2></div><form novalidate class="record-panel" id="record-form"><p id="form-error" role="alert" tabindex="-1"></p>${editing ? `<p class="record-id">ID: ${esc(p.id)} · unveränderlich</p>` : '<p>Die ID wird automatisch vergeben.</p>'}${field('name',people ? 'Name (Pflichtfeld)' : 'Bezeichnung (Pflichtfeld)',p.name)}${people ? `<div class="field"><label for="proof">Ausweisnachweis (Pflichtfeld)</label><select name="proof" id="proof" aria-describedby="error-proof">${editing ? '<option value="keep">Vorhandenen Nachweis beibehalten</option>' : ''}<option value="manual">Ausweisnummer manuell erfassen</option><option value="photo">Foto hochladen</option></select><small class="field-error" id="error-proof"></small></div><div id="manual-fields"><div class="field"><label for="documentType">Ausweisart (Pflichtfeld)</label><select id="documentType" name="documentType" aria-describedby="error-documentType">${types.map(t=>`<option>${t}</option>`).join('')}</select><small class="field-error" id="error-documentType"></small></div><div id="description-field">${field('documentDescription','Bezeichnung des sonstigen Ausweises (Pflichtfeld)')}</div>${field('documentNumber','Ausweisnummer (Pflichtfeld)')}</div><div id="photo-fields" class="field"><label for="photo">Ausweisfoto (Pflichtfeld)</label><input type="file" id="photo" name="photo" accept="image/jpeg,image/png" aria-describedby="photo-help error-photo"><small id="photo-help">JPEG oder PNG · höchstens 5 MiB und 20 Millionen Pixel</small><small class="field-error" id="error-photo"></small></div>` : ''}<div class="actions"><button type="submit">Speichern</button><a class="button secondary" href="${editing ? '#'+encodeURIComponent(p.id) : '#'}">Abbrechen</a></div></form>`;
+  content.innerHTML = `<div class="section-heading"><h2>${label} ${editing ? 'bearbeiten' : 'anlegen'}</h2></div><form novalidate class="record-panel" id="record-form"><p id="form-error" role="alert" tabindex="-1"></p>${editing ? `<p class="record-id">ID: ${esc(p.id)} · unveränderlich</p>` : '<p>Die ID wird automatisch vergeben.</p>'}${field('name',people ? 'Name (Pflichtfeld)' : 'Bezeichnung (Pflichtfeld)',p.name)}${people ? `<div class="field"><label for="proof">Ausweisnachweis (Pflichtfeld)</label><select name="proof" id="proof" aria-describedby="error-proof">${editing ? '<option value="keep">Vorhandenen Nachweis beibehalten</option>' : ''}<option value="manual">Ausweisnummer manuell erfassen</option><option value="photo">Foto hochladen</option></select><small class="field-error" id="error-proof"></small></div><div id="manual-fields"><div class="field"><label for="documentType">Ausweisart (Pflichtfeld)</label><select id="documentType" name="documentType" aria-describedby="error-documentType">${types.map(t=>`<option>${t}</option>`).join('')}</select><small class="field-error" id="error-documentType"></small></div><div id="description-field">${field('documentDescription','Bezeichnung des sonstigen Ausweises (Pflichtfeld)')}</div>${field('documentNumber','Ausweisnummer (Pflichtfeld)')}</div><div id="photo-fields" class="field"><label for="photo">Ausweisfoto (Pflichtfeld)</label><input type="file" id="photo" name="photo" accept="image/jpeg,image/png" aria-describedby="photo-help error-photo"><small id="photo-help">JPEG oder PNG · höchstens 5 MiB und 20 Millionen Pixel</small><small class="field-error" id="error-photo"></small></div>` : bikeFields(p)}<div class="actions"><button type="submit">Speichern</button><a class="button secondary" href="${editing ? '#'+encodeURIComponent(p.id) : '#'}">Abbrechen</a></div></form>`;
   if (people) {
    const update = () => {
     const mode = document.querySelector('#proof').value;
@@ -51,6 +60,15 @@
    document.querySelector('#documentType').addEventListener('change',update);
    update();
   }
+  if (!people && editing) {
+   const updateImage=()=>{
+    const replace=document.querySelector('#image').value==='replace';
+    document.querySelector('#bike-photo-fields').hidden=!replace;
+    document.querySelector('#photo').disabled=!replace;
+   };
+   document.querySelector('#image').addEventListener('change',updateImage);
+   updateImage();
+  }
   document.querySelector('form').addEventListener('submit',async event=>{
    event.preventDefault();
    const form=event.currentTarget;
@@ -58,8 +76,7 @@
    const button=form.querySelector('button');
    const data=new FormData(form);
    let options={method:editing?'PUT':'POST'};
-   if (people) options.body=data;
-   else {options.headers={'Content-Type':'application/json'}; options.body=JSON.stringify({name:data.get('name')});}
+   options.body=data;
    button.disabled=true;
    try {
     const saved=await request(api+(editing?'/'+encodeURIComponent(p.id):''), options);
@@ -81,10 +98,10 @@
    if (id) {
     const p=await request(api+'/'+encodeURIComponent(id));if(own!==generation)return;
     if(route[1]==='bearbeiten'){form(p);return;}
-    content.innerHTML=`<div class="section-heading"><h2>${label} im Detail</h2><a href="#">Zur Übersicht</a></div><article class="record-panel"><p class="record-id">ID: ${esc(p.id)}</p><h3>${esc(p.name)}</h3>${people ? `<h4>Ausweisnachweis</h4>${p.photoURL ? `<img class="identity-photo" src="${esc(p.photoURL)}" alt="Hinterlegtes Ausweisfoto">` : `<dl><dt>Ausweisart</dt><dd>${esc(p.documentType)}</dd>${p.documentDescription ? `<dt>Bezeichnung</dt><dd>${esc(p.documentDescription)}</dd>` : ''}<dt>Ausweisnummer</dt><dd>${esc(p.documentNumber)}</dd></dl>`}` : ''}<div class="actions"><a class="button" href="#${encodeURIComponent(p.id)}/bearbeiten">Bearbeiten</a>${people ? `<a class="button secondary" href="/ausleihe?person=${encodeURIComponent(p.id)}">Ski ausleihen</a>` : ''}</div></article>`;
+    content.innerHTML=`<div class="section-heading"><h2>${label} im Detail</h2><a href="#">Zur Übersicht</a></div><article class="record-panel"><p class="record-id">ID: ${esc(p.id)}</p><h3>${esc(p.name)}</h3>${people ? `<h4>Ausweisnachweis</h4>${p.photoURL ? `<img class="identity-photo" src="${esc(p.photoURL)}" alt="Hinterlegtes Ausweisfoto">` : `<dl><dt>Ausweisart</dt><dd>${esc(p.documentType)}</dd>${p.documentDescription ? `<dt>Bezeichnung</dt><dd>${esc(p.documentDescription)}</dd>` : ''}<dt>Ausweisnummer</dt><dd>${esc(p.documentNumber)}</dd></dl>`}` : `<p class="bike-type">${esc(p.type)}</p>${bikePicture(p)}`}<div class="actions"><a class="button" href="#${encodeURIComponent(p.id)}/bearbeiten">Bearbeiten</a>${people ? `<a class="button secondary" href="/ausleihe?person=${encodeURIComponent(p.id)}">Fahrrad ausleihen</a>` : ''}</div></article>`;
    } else {
     const list=await request(api);if(own!==generation)return;
-    content.innerHTML=`<div class="section-heading"><h2>${people?'Registrierte Personen':'Ski-Paare im Inventar'}</h2><a class="button" href="#neu">${label} anlegen</a></div><div class="record-panel">${list.length ? `<ul class="record-list">${list.map(p=>`<li><a href="#${encodeURIComponent(p.id)}"><span class="record-id">${esc(p.id)}</span><strong>${esc(p.name)}</strong><span aria-hidden="true">→</span></a></li>`).join('')}</ul>` : `<p>Noch keine ${people?'Personen':'Ski-Paare'} vorhanden. Lege den ersten Eintrag an.</p>`}</div>`;
+    content.innerHTML=`<div class="section-heading"><h2>${people?'Registrierte Personen':'Fahrräder im Inventar'}</h2><a class="button" href="#neu">${label} anlegen</a></div><div class="record-panel">${list.length ? `<ul class="record-list">${list.map(p=>`<li><a${!people?' class="inventory-bike"':''} href="#${encodeURIComponent(p.id)}"><span class="record-id">${esc(p.id)}</span><strong>${esc(p.name)}${!people?`<small class="bike-type">${esc(p.type)}</small>`:''}</strong>${!people?bikePicture(p):''}<span aria-hidden="true">→</span></a></li>`).join('')}</ul>` : `<p>Noch keine ${people?'Personen':'Fahrräder'} vorhanden. Lege den ersten Eintrag an.</p>`}</div>`;
    }
   } catch(error) {if(own!==generation)return;content.innerHTML='<p id="form-error" role="alert" tabindex="-1"></p><a href="#">Zur Übersicht</a>';showErrors(error);}
  }

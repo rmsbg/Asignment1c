@@ -36,17 +36,8 @@ func ValidatePerson(p Person) (Person, error) {
 		if p.DocumentType != "" || p.DocumentDescription != "" || p.DocumentNumber != "" {
 			e["proof"] = "Bitte genau eine Nachweisart verwenden."
 		}
-		if len(p.Photo) > MaxPhotoBytes {
-			e["photo"] = "Das Foto darf höchstens 5 MiB groß sein."
-		} else {
-			cfg, format, err := image.DecodeConfig(bytes.NewReader(p.Photo))
-			if err != nil || (format != "jpeg" && format != "png") || cfg.Width <= 0 || cfg.Height <= 0 || int64(cfg.Width)*int64(cfg.Height) > 20_000_000 {
-				e["photo"] = "Bitte ein gültiges JPEG oder PNG mit höchstens 20 Millionen Pixeln wählen."
-			} else if _, _, err := image.Decode(bytes.NewReader(p.Photo)); err != nil {
-				e["photo"] = "Das Foto ist beschädigt und kann nicht gelesen werden."
-			} else if p.PhotoType != "image/"+format {
-				e["photo"] = "Der angegebene Dateityp stimmt nicht mit dem Bildinhalt überein."
-			}
+		if err := ValidatePhoto(p.Photo, p.PhotoType); err != nil {
+			e["photo"] = err.(ValidationErrors)["photo"]
 		}
 	} else {
 		switch p.DocumentType {
@@ -70,4 +61,50 @@ func ValidatePerson(p Person) (Person, error) {
 	}
 	p.Photo = bytes.Clone(p.Photo)
 	return p, nil
+}
+
+// ValidatePhoto checks both the declared type and the actual decoded image.
+func ValidatePhoto(data []byte, media string) error {
+	message := ""
+	if len(data) == 0 {
+		message = "Bitte ein Foto auswählen."
+	} else if len(data) > MaxPhotoBytes {
+		message = "Das Foto darf höchstens 5 MiB groß sein."
+	} else {
+		cfg, format, err := image.DecodeConfig(bytes.NewReader(data))
+		if err != nil || (format != "jpeg" && format != "png") || cfg.Width <= 0 || cfg.Height <= 0 || int64(cfg.Width)*int64(cfg.Height) > 20_000_000 {
+			message = "Bitte ein gültiges JPEG oder PNG mit höchstens 20 Millionen Pixeln wählen."
+		} else if _, _, err := image.Decode(bytes.NewReader(data)); err != nil {
+			message = "Das Foto ist beschädigt und kann nicht gelesen werden."
+		} else if media != "image/"+format {
+			message = "Der angegebene Dateityp stimmt nicht mit dem Bildinhalt überein."
+		}
+	}
+	if message != "" {
+		return ValidationErrors{"photo": message}
+	}
+	return nil
+}
+
+func ValidateBike(b Bike) (Bike, error) {
+	b.Name = strings.TrimSpace(b.Name)
+	b.Type = strings.TrimSpace(b.Type)
+	fields := ValidationErrors{}
+	if b.Name == "" {
+		fields["name"] = "Bitte eine Bezeichnung eingeben."
+	}
+	switch b.Type {
+	case "Downhill", "MTB", "Rennrad":
+	default:
+		fields["type"] = "Bitte Downhill, MTB oder Rennrad auswählen."
+	}
+	if err := ValidatePhoto(b.Photo, b.PhotoType); err != nil {
+		fields["photo"] = err.(ValidationErrors)["photo"]
+	}
+	if len(fields) > 0 {
+		return Bike{}, fields
+	}
+	b.Photo = bytes.Clone(b.Photo)
+	b.PhotoURL = ""
+	return b, nil
 }
