@@ -1,0 +1,6 @@
+.DS_Store
+/SkiRental/
+/BikeRental/bin/
+/BikeRental/server
+/BikeRental/coverage.out
+/.test-results/

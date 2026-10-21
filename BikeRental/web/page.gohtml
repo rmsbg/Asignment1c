@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{{.Current.Title}} · BikeRental Phase 0</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+  <script src="/assets/verwaltung.js" defer></script>
+  <script src="/assets/ausleihe.js" defer></script>
+  <script src="/assets/dashboard.js" defer></script>
+  <script src="/assets/tarife.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#inhalt">Zum Inhalt</a>
+  <aside class="sidebar">
+    <a class="brand" href="/" aria-label="SkiRental Startseite">
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><path d="m5 29 12-19 7 11 4-6 8 14H5Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><path d="m13 17 4 3 4-3" stroke="currentColor" stroke-width="2"/></svg></span>
+      <span>SkiRental<span class="brand-subtitle">DEIN VERLEIH. IM BLICK.</span></span>
+    </a>
+    <p class="nav-label">Arbeitsbereich</p>
+    <nav aria-label="Hauptnavigation">
+      {{range $i, $page := .Pages}}
+      <a class="nav-item" href="{{$page.Path}}"{{if eq $page.Path $.Current.Path}} aria-current="page"{{end}}>
+        <span class="nav-number" aria-hidden="true">0{{$i}}</span><span>{{$page.Title}}</span>
+      </a>
+      {{end}}
+    </nav>
+    <div class="sidebar-bottom"><span class="status-dot" aria-hidden="true"></span> Lokal. Einfach. Übersichtlich.<small>Für Mitarbeiter im Skiverleih.</small></div>
+  </aside>
+
+  <div class="workspace">
+    <header class="topbar"><span>SkiRental <span class="breadcrumb" aria-hidden="true">/</span> <strong>{{.Current.Step}}</strong></span><span class="prototype-label">Lokaler Prototyp</span></header>
+    <main id="inhalt" tabindex="-1">
+      <div class="page-heading">
+        <div><p class="eyebrow">DEIN ARBEITSBEREICH</p><h1>{{.Current.Title}}</h1><p class="lead">{{.Current.Description}}</p></div>
+        {{if .Demo}}<span class="mode-badge">Demomodus · Beispieldaten</span>{{end}}
+      </div>
+
+      <aside class="notice" aria-label="Entwicklungsstand"><p><strong>BikeRental · Phase 0.</strong> Technischer Ausgangsstand von SkiRental. Fahrradverwaltung, Stundenmiete, Fahrradbilder und Zusatzleistungen folgen in den nächsten Phasen; die vorhandenen Ski-Funktionen dienen der Ausgangsprüfung.</p></aside>
+
+      <aside class="notice" aria-label="Hinweis zur Speicherung"><span class="notice-icon" aria-hidden="true">i</span><p><strong>Nur für diese Sitzung.</strong> Alle Daten liegen im Arbeitsspeicher und gehen beim Neustart verloren.{{if .Demo}} Der Demomodus lädt ausschließlich synthetische Beispieldaten.{{end}}</p></aside>
+
+      {{if .Dashboard}}
+      <section id="dashboard" aria-labelledby="bestand-title">
+        <div class="section-heading"><h2 id="bestand-title">Der Verleih im Überblick</h2><span>Bestand in Ski-Paaren</span></div>
+        <p class="calendar-hint">Die Kennzahlen zählen tatsächlich ausgegebene Paare. Buchungen sind nicht enthalten. Die Verfügbarkeit für einen Zeitraum wird unter „Neue Ausleihe“ geprüft.</p>
+        <div class="metrics">
+          <article class="metric"><span class="metric-label"><span class="metric-dot available" aria-hidden="true"></span>Verfügbare Ski</span><strong data-metric="availableSkis">{{.Counts.AvailableSkis}}</strong><small>Paare aktuell nicht ausgegeben</small></article>
+          <article class="metric"><span class="metric-label"><span class="metric-dot rented" aria-hidden="true"></span>Ausgeliehene Ski</span><strong data-metric="rentedSkis">{{.Counts.RentedSkis}}</strong><small>Paare aktiv ausgeliehen</small></article>
+          <article class="metric"><span class="metric-label"><span class="metric-dot inventory" aria-hidden="true"></span>Gesamtbestand Ski</span><strong data-metric="totalSkis">{{.Counts.TotalSkis}}</strong><small>Paare im Inventar</small></article>
+          <article class="metric"><span class="metric-label"><span class="metric-dot people" aria-hidden="true"></span>Registrierte Personen</span><strong data-metric="registeredPeople">{{.Counts.RegisteredPeople}}</strong><small>Personen registriert</small></article>
+        </div>
+        <div class="dashboard-update"><p id="dashboard-status" role="status">Stand beim Öffnen der Seite.</p><button type="button" class="secondary" id="dashboard-refresh" hidden>Jetzt aktualisieren</button></div>
+        <noscript><p>Automatische Aktualisierung benötigt JavaScript. Zum Aktualisieren die Seite neu laden.</p></noscript>
+      </section>
+
+      <section class="welcome-panel" aria-labelledby="welcome-title">
+        <div class="welcome-copy"><span class="panel-tag">ALLES FÜR DEN VERLEIHTAG</span><h2 id="welcome-title">Dein Bestand.<br>Immer im Blick.</h2><p>Bestand prüfen, Kunden erfassen, Ski ausleihen und zurücknehmen. Die Kennzahlen halten dich auf dem Laufenden.</p><span class="phase-pill">MVP · Dein lokaler Skiverleih</span></div>
+        <svg class="mountains" viewBox="0 0 480 250" fill="none" aria-hidden="true"><circle cx="350" cy="65" r="35" fill="#efd9a8"/><path d="m0 250 155-204 95 119 55-71 175 156H0Z" fill="#395651"/><path d="m51 250 172-168 153 168H51Z" fill="#6c8a78"/><path d="m107 108 48-62 47 59-28-8-19 13-14-16-34 14Z" fill="#f1f2e5"/><path d="m175 129 48-47 53 58-34-13-18 12-18-17-31 7Z" fill="#dce5d7"/><path d="M0 233c96-20 118 23 215 4s156-24 265 0v13H0Z" fill="#a7b69a"/><path d="m337 171-12 31h24l-12-31Zm38 20-10 27h20l-10-27Z" fill="#213d39"/></svg>
+      </section>
+
+      <section aria-labelledby="shortcuts-title">
+        <div class="section-heading"><h2 id="shortcuts-title">Direkt zum richtigen Bereich</h2><span>Schnellzugriff</span></div>
+        <div class="shortcuts">
+          <a class="shortcut" href="/ski"><span class="shortcut-icon" aria-hidden="true">01</span><h3>Ski verwalten <span aria-hidden="true">↗</span></h3><p>Alle Ski-Paare anlegen, anzeigen und bearbeiten.</p><small>Anlegen · Anzeigen · Bearbeiten</small></a>
+          <a class="shortcut" href="/personen"><span class="shortcut-icon" aria-hidden="true">02</span><h3>Personen verwalten <span aria-hidden="true">↗</span></h3><p>Personen und ihre Ausweisnachweise verwalten.</p><small>Anlegen · Anzeigen · Bearbeiten</small></a>
+          <a class="shortcut" href="/ausleihe"><span class="shortcut-icon" aria-hidden="true">03</span><h3>Neue Ausleihe <span aria-hidden="true">↗</span></h3><p>Hier beginnt der Weg vom Ski-Paar auf die Piste.</p><small>Buchen · Ausgeben · Zurücknehmen</small></a>
+          <a class="shortcut" href="/tarife"><span class="shortcut-icon" aria-hidden="true">04</span><h3>Tarife verwalten <span aria-hidden="true">↗</span></h3><p>Gemeinsame Tagespreise und Zusatztage festlegen.</p><small>EUR · Dauerabhängige Preise</small></a>
+        </div>
+      </section>
+      {{else if or (eq .Current.Path "/ski") (eq .Current.Path "/personen")}}
+      <section id="verwaltung" data-kind="{{.Current.Path}}" aria-label="Verwaltung">
+        <p role="status" id="message" tabindex="-1"></p>
+        <div id="content"><p>Daten werden geladen …</p></div>
+        <noscript>Bitte JavaScript aktivieren, um die Verwaltung zu verwenden.</noscript>
+      </section>
+      {{else if eq .Current.Path "/tarife"}}
+      <section id="tarife" aria-label="Tarifverwaltung">
+        <p role="status" id="tariff-message" tabindex="-1"></p>
+        <div id="tariff-content"><p>Tarif wird geladen …</p></div>
+        <noscript>Bitte JavaScript aktivieren, um Tarife zu verwalten.</noscript>
+      </section>
+      {{else}}
+      <section id="ausleihe" aria-label="Ausleihe und Rückgabe">
+        <p role="status" id="rental-message" tabindex="-1"></p>
+        <div id="rental-content"><p>Ausleihen werden geladen …</p></div>
+        <noscript>Bitte JavaScript aktivieren, um Ausleihen und Rückgaben zu erfassen.</noscript>
+      </section>
+      {{end}}
+      <footer class="footer"><span>SkiRental · Einfach gut organisiert.</span><span>MVP <span aria-hidden="true">/</span> Lokaler Skiverleih</span></footer>
+    </main>
+  </div>
+</body>
+</html>
