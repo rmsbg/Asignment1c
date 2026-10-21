@@ -198,3 +198,5 @@ dd { margin: 5px 0 0; }
 .extras-insurance-note{color:var(--muted)}
 .price-breakdown{margin:12px 0;max-width:570px}.price-breakdown div{display:flex;justify-content:space-between;gap:16px;padding:8px 0}.price-breakdown dt,.price-breakdown dd{margin:0;font-size:13px;color:inherit}.price-breakdown dd{white-space:nowrap;text-align:right}
 .price-breakdown .price-total{border-top:1px solid var(--border);font-weight:700;margin-top:6px}.no-extras{font-size:12px;color:var(--muted)}
+
+.dashboard-empty{background:#edf1e9;border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-top:14px;font-size:13px;line-height:1.6}.dashboard-empty p{margin:0}.notice-action{display:inline-block;margin:8px 0;font-weight:650}.rental-card:focus{outline:3px solid #a34e25;outline-offset:4px}

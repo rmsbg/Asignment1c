@@ -24,7 +24,9 @@
    if (!fields.every(field => Number.isSafeInteger(counts[field.dataset.metric]) && counts[field.dataset.metric] >= 0) || counts.availableBikes + counts.rentedBikes !== counts.totalBikes) throw new Error('Ungültige Kennzahlen');
    if (document.hidden || stopped || controller.signal.aborted) return;
    fields.forEach(field => field.textContent = counts[field.dataset.metric]);
-   lastSuccess = new Date().toLocaleTimeString('de-AT');
+   document.querySelector('#dashboard-empty-inventory').hidden=counts.totalBikes!==0;
+   document.querySelector('#dashboard-empty-people').hidden=counts.registeredPeople!==0;
+   lastSuccess = new Date().toLocaleTimeString('de-AT',{timeZone:'Europe/Vienna'})+' (Wien)';
    status.textContent = `Aktualisiert um ${lastSuccess} · automatisch alle 5 Sekunden.`;
    status.className = '';
   } catch {

@@ -6,7 +6,8 @@ Phase 0 ist technisch abgeschlossen, geprüft und am 21.10.2026 ausdrücklich
 vom Auftraggeber abgenommen. Phase 1 ist implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
 vom Auftraggeber abgenommen. Phase 2 ist implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
 vom Auftraggeber abgenommen. Phase 3 ist implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
-vom Auftraggeber abgenommen. Die Phasen 4 und 5 sind noch offen. Als technische Ausgangsbasis dient der vorhandene
+vom Auftraggeber abgenommen. Phase 4 ist implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
+vom Auftraggeber abgenommen. Phase 5 ist noch offen. Als technische Ausgangsbasis dient der vorhandene
 SkiRental-Stand bis einschließlich Phase 5. Dessen dokumentierte Abnahmen sind
 historische Nachweise für SkiRental, keine BikeRental-Abnahmen. Diese Roadmap
 ordnet Arbeit nach Abhängigkeiten und enthält keine Terminzusagen.
@@ -15,8 +16,8 @@ Für jede Phase gilt: **Spezifizieren → Aufgaben ableiten → Implementieren �
 Prüfen → Abnehmen**. Vor Codeänderungen entsteht eine Feature-Spezifikation in
 BikeRentals `specs/` mit Nutzerablauf, Datenmodell, Geschäftsregeln, API-Verhalten,
 Fehlerfällen und überprüfbaren Akzeptanzkriterien. Die nachfolgend genannten
-Feature-Dateien ab Phase 4 sind geplant und noch nicht angelegt. Spezifikationen
-und Prüfnachweise der Phasen 0 bis 3 sind bereits vorhanden.
+Feature-Dateien ab Phase 5 sind geplant und noch nicht angelegt. Spezifikationen
+und Prüfnachweise der Phasen 0 bis 4 sind bereits vorhanden.
 
 Technische Prüfergebnisse und ausdrückliche Auftraggeberabnahme werden getrennt
 festgehalten. Nach Abschluss und ausdrücklicher Auftraggeberabnahme jeder Phase
@@ -96,6 +97,7 @@ Preisen aus B-01, B-02 und B-03.
 
 **Status:** Implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
 vom Auftraggeber abgenommen: „phase 3 ist abgenommen“.
+Gesichert mit `2eb73e9` (`Phase 3: Zusatzleistungen im Buchungsablauf abschließen`).
 **Spezifikation und Prüfnachweis:** [03-zusatzleistungen.md](03-zusatzleistungen.md).
 
 **Ergebnis:** Helm, Schutzausrüstung und Versicherung sind gemäß B-04 in den
@@ -113,7 +115,9 @@ Verleihvorgang integriert.
 
 ## Phase 4 – Dashboard und durchgängige Bedienung
 
-**Status:** Offen. **Geplante Spezifikation:** `04-dashboard-bedienung.md`.
+**Status:** Implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
+vom Auftraggeber abgenommen: „phase 4 ist hiermit abgenommen“.
+**Spezifikation und Prüfnachweis:** [04-dashboard-bedienung.md](04-dashboard-bedienung.md).
 
 **Ergebnis:** Übersichtlicher Gesamtfluss gemäß B-05/B-06 und konsistente Kennzahlen.
 

@@ -113,6 +113,22 @@ oder Logs. Die vorhandenen Schutzheader und Upload-Begrenzungen bleiben erhalten
 HTTP-Antworten unterscheiden ungültige Eingaben, fehlende Datensätze und Konflikte;
 die Oberfläche zeigt verständliche deutsche Fehlermeldungen.
 
+## Dashboard und Navigation
+
+Seit Phase 4 verknüpfen fünf Schnellzugriffe und dynamische Leerhinweise die
+Verwaltung mit dem Verleihablauf. `/ausleihe#uebersicht/{id}` fokussiert die
+zugehörige Buchungskarte; unbekannte oder fehlerhaft kodierte Ziele lassen die
+Übersicht bedienbar. Verwaltungsfehler bieten einen erneuten Ladeversuch,
+korrigierte Preisprüfungen entfernen alte Validierungsfehler.
+
+Die Dashboard-API bleibt unverändert mit vier Kennzahlen aus einem gesperrten
+Store-Snapshot. Serverseitige Anfangswerte funktionieren ohne JavaScript. Der
+Browser aktualisiert alle fünf Sekunden und bei Rückkehr, pausiert verborgen
+und begrenzt Abfragen auf jeweils eine mit fünf Sekunden Timeout. Ungültige
+Antworten ersetzen keine gültigen Werte; die Oberfläche markiert sie als veraltet
+und versucht es erneut. Zeitangaben verwenden ausdrücklich Europe/Vienna.
+Details und Nachweise: [Phase 4](04-dashboard-bedienung.md).
+
 ## Lokaler Betrieb und Qualitätsregeln
 
 Loopback-Adresse `http://127.0.0.1:8080`, leerer Normalstart und optionaler

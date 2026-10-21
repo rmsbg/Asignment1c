@@ -16,12 +16,13 @@ Das System soll kostensparend entwickelt werden und daher zu möglichst großen 
 - exakt wie bei „SkiRental“
 
 
-## Entwicklungsstand – Phase 3
+## Entwicklungsstand – Phase 4
 
-**Phase 3 ist implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
-vom Auftraggeber abgenommen. [Prüfnachweis und Screenshots](specs/03-zusatzleistungen.md).**
+**Phase 4 ist implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
+vom Auftraggeber abgenommen. [Prüfnachweis und Screenshots](specs/04-dashboard-bedienung.md).**
 Phase 0 ist mit `28aa829`, Phase 1 mit `b8901d2` und die ausdrücklich abgenommene
-Phase 2 mit `be2d6de` gesichert.
+Phase 2 mit `be2d6de` gesichert. Phase 3 wurde ausdrücklich abgenommen und mit
+`2eb73e9` committet.
 
 Die Arbeitskopie liegt in `BikeRental/` (Go-Modul `bikerental`) und baut auf
 SkiRental auf. Fahrräder mit Typ und Pflichtbild werden stundenweise oder tageweise
@@ -114,7 +115,10 @@ Prototyp führt keine externe Versicherungsabwicklung durch. Zubehörbestände
 werden nicht geführt.
 
 Nach **Zum angezeigten Preis buchen** erfolgt die Ausgabe separat über
-**Fahrrad ausgeben**, später **Rückgabe erfassen**. Ausgabe nur innerhalb des
+**Fahrrad ausgeben**, später **Rückgabe erfassen**. Der Bestätigungslink
+**Zur Ausgabe und Buchungsübersicht** öffnet direkt die gerade angelegte Buchung
+und setzt den Fokus auf deren Karte. **Buchungen und Rückgaben** ist auch direkt
+vom Dashboard und Buchungsformular erreichbar. Ausgabe nur innerhalb des
 gebuchten Zeitraums und nach tatsächlicher Rückgabe des vorherigen Vorgangs.
 Direkte Anschlussbuchungen sind möglich, Doppelbuchungen beider Mietarten werden
 verhindert. Noch nicht ausgegebene Buchungen sind stornierbar. Abgelaufene und
@@ -126,8 +130,22 @@ und bestätigt werden. Bestehende Buchungen behalten den gebuchten Typ, Mietart,
 Dauer, gewählte Extras, Einzelpauschalen und Gesamtpreis auch bei späterer Ausgabe
 oder früher/später Rückgabe. Die Preisaufteilung bleibt in Übersicht und Verlauf
 sichtbar, auch nach Stornierung.
-Das Dashboard zählt tatsächlich ausgegebene Fahrräder. Die interaktiven Abläufe
-benötigen JavaScript.
+### Dashboard und Bedienung
+
+Das Dashboard zeigt verfügbare und tatsächlich ausgegebene Fahrräder, Gesamtbestand
+und registrierte Personen. Reservierungen zählen noch nicht als Ausgabe.
+Fünf Schnellzugriffe führen zu Inventar, Personen, neuer Ausleihe, Buchungen und
+Rückgaben sowie Tarifen. Bei leerem Start verlinken Hinweise die ersten Schritte.
+
+Die Kennzahlen aktualisieren sich alle fünf Sekunden und bei Rückkehr zum Tab.
+Die letzte Aktualisierung zeigt Wiener Zeit. Bei Fehlern bleiben die letzten
+Werte sichtbar und sind als veraltet markiert; die Aktualisierung erholt sich
+automatisch oder über **Jetzt aktualisieren**. Ohne JavaScript erscheinen die
+serverseitigen Anfangswerte; die interaktiven Verwaltungsabläufe benötigen JavaScript.
+
+Fehlgeschlagene Verwaltungsabfragen bieten **Erneut laden**. Nach korrigierter
+Preisprüfung verschwinden alte Fehlermarkierungen. Bei belegten Fahrrädern führt
+**Rückgaben ansehen** zur Übersicht; Änderungen am Zeitraum verlangen eine neue Prüfung.
 
 ### Build und Prüfung
 
@@ -159,6 +177,9 @@ aus ihrem mitgelieferten Zeichencode neu erzeugt werden.
 - [Phase 1: Fahrradverwaltung, API und Prüfnachweis](specs/01-fahrradverwaltung.md)
 - [Phase 2: Mietzeiten, Tarife und Prüfnachweis](specs/02-mietzeiten-preise.md)
 - [Phase 3: Zusatzleistungen, API und Prüfnachweis](specs/03-zusatzleistungen.md)
+- [Phase 4: Dashboard, Bedienung und Prüfnachweis](specs/04-dashboard-bedienung.md)
+
+Phase 5 mit Anforderungsmatrix und abschließender MVP-Gesamtprüfung steht noch aus.
 
 Nach technischem Abschluss und ausdrücklicher Auftraggeberabnahme jeder Phase
 wird ein lokaler Git-Commit erstellt. Ein Implementierungsauftrag allein gilt

@@ -37,7 +37,7 @@
         {{if .Demo}}<span class="mode-badge">Demomodus · Beispieldaten</span>{{end}}
       </div>
 
-      <aside class="notice" aria-label="Entwicklungsstand"><p><strong>BikeRental · Phase 3.</strong> Stunden- und Tagesmiete mit wählbarem Helm, Schutzausrüstung und Versicherung als Pauschalen pro Buchung.</p></aside>
+      <aside class="notice" aria-label="Entwicklungsstand"><p><strong>BikeRental · Phase 4.</strong> Vom Inventar über die Buchung bis zur Rückgabe – mit aktuellen Bestandszahlen und nachvollziehbaren Preisen.</p></aside>
 
       <aside class="notice" aria-label="Hinweis zur Speicherung"><span class="notice-icon" aria-hidden="true">i</span><p><strong>Nur für diese Sitzung.</strong> Alle Daten liegen im Arbeitsspeicher und gehen beim Neustart verloren.{{if .Demo}} Der Demomodus lädt ausschließlich synthetische Beispieldaten.{{end}}</p></aside>
 
@@ -51,6 +51,8 @@
           <article class="metric"><span class="metric-label"><span class="metric-dot inventory" aria-hidden="true"></span>Gesamtbestand Fahrräder</span><strong data-metric="totalBikes">{{.Counts.TotalBikes}}</strong><small>Fahrräder im Inventar</small></article>
           <article class="metric"><span class="metric-label"><span class="metric-dot people" aria-hidden="true"></span>Registrierte Personen</span><strong data-metric="registeredPeople">{{.Counts.RegisteredPeople}}</strong><small>Personen registriert</small></article>
         </div>
+        <div class="dashboard-empty" id="dashboard-empty-inventory"{{if ne .Counts.TotalBikes 0}} hidden{{end}}><p><strong>Noch keine Fahrräder im Inventar.</strong> <a href="/fahrraeder#neu">Erstes Fahrrad mit Bild anlegen</a>. Vor der ersten Buchung die <a href="/tarife">Tarife und Extrapauschalen einrichten</a>.</p></div>
+        <div class="dashboard-empty" id="dashboard-empty-people"{{if ne .Counts.RegisteredPeople 0}} hidden{{end}}><p><strong>Noch keine Personen registriert.</strong> <a href="/personen#neu">Erste Person registrieren</a> und anschließend ein Fahrrad buchen.</p></div>
         <div class="dashboard-update"><p id="dashboard-status" role="status">Stand beim Öffnen der Seite.</p><button type="button" class="secondary" id="dashboard-refresh" hidden>Jetzt aktualisieren</button></div>
         <noscript><p>Automatische Aktualisierung benötigt JavaScript. Zum Aktualisieren die Seite neu laden.</p></noscript>
       </section>
@@ -66,7 +68,8 @@
           <a class="shortcut" href="/fahrraeder"><span class="shortcut-icon" aria-hidden="true">01</span><h3>Fahrräder verwalten <span aria-hidden="true">↗</span></h3><p>Alle Fahrräder anlegen, anzeigen und bearbeiten.</p><small>Anlegen · Anzeigen · Bearbeiten</small></a>
           <a class="shortcut" href="/personen"><span class="shortcut-icon" aria-hidden="true">02</span><h3>Personen verwalten <span aria-hidden="true">↗</span></h3><p>Personen und ihre Ausweisnachweise verwalten.</p><small>Anlegen · Anzeigen · Bearbeiten</small></a>
           <a class="shortcut" href="/ausleihe"><span class="shortcut-icon" aria-hidden="true">03</span><h3>Neue Ausleihe <span aria-hidden="true">↗</span></h3><p>Hier beginnt der Weg vom Fahrrad auf die Strecke.</p><small>Buchen · Ausgeben · Zurücknehmen</small></a>
-          <a class="shortcut" href="/tarife"><span class="shortcut-icon" aria-hidden="true">04</span><h3>Tarife verwalten <span aria-hidden="true">↗</span></h3><p>Stundenpreise, Tagesstaffeln und Zusatztage je Fahrradtyp festlegen.</p><small>EUR · Dauerabhängige Preise</small></a>
+          <a class="shortcut" href="/ausleihe#uebersicht"><span class="shortcut-icon" aria-hidden="true">04</span><h3>Buchungen und Rückgaben <span aria-hidden="true">↗</span></h3><p>Gebuchte Fahrräder ausgeben und Rückgaben erfassen.</p><small>Buchungen · Ausgabe · Rückgabe · Verlauf</small></a>
+          <a class="shortcut" href="/tarife"><span class="shortcut-icon" aria-hidden="true">05</span><h3>Tarife verwalten <span aria-hidden="true">↗</span></h3><p>Stundenpreise, Tagesstaffeln und Zusatztage je Fahrradtyp festlegen.</p><small>EUR · Dauerabhängige Preise</small></a>
         </div>
       </section>
       {{else if or (eq .Current.Path "/fahrraeder") (eq .Current.Path "/personen")}}

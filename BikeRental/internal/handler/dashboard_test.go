@@ -5,7 +5,9 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
+	"bikerental/internal/domain"
 	"bikerental/internal/store"
 )
 
@@ -44,9 +46,14 @@ func TestDashboardAPIAndHTML(t *testing.T) {
 				t.Fatal("dashboard exposes identity data")
 			}
 		}
-		for _, text := range []string{`id="dashboard"`, `data-metric="availableBikes"`, `data-metric="rentedBikes"`, `data-metric="totalBikes"`, `data-metric="registeredPeople"`, `/assets/dashboard.js`, `id="dashboard-status"`, `href="/fahrraeder"`, `href="/personen"`, `href="/ausleihe"`} {
+		for _, text := range []string{`id="dashboard"`, `data-metric="availableBikes"`, `data-metric="rentedBikes"`, `data-metric="totalBikes"`, `data-metric="registeredPeople"`, `/assets/dashboard.js`, `id="dashboard-status"`, `href="/fahrraeder"`, `href="/personen"`, `href="/ausleihe"`, `href="/ausleihe#uebersicht"`, `href="/tarife"`} {
 			if !strings.Contains(html, text) {
 				t.Fatalf("missing dashboard UI: %s", text)
+			}
+		}
+		for _, id := range []string{"dashboard-empty-inventory", "dashboard-empty-people"} {
+			if strings.Contains(html, `id="`+id+`" hidden`) != demo {
+				t.Fatal("empty-state visibility does not match SSR counts")
 			}
 		}
 		if strings.Contains(html, "Kennzahl folgt") || strings.Contains(html, "Noch nicht verfügbar") {
@@ -77,6 +84,15 @@ func TestDashboardTracksHTTPWorkflow(t *testing.T) {
 	personRequest(t, app, "POST", "/api/personen", map[string]string{"name": "Dashboard Testperson", "proof": "manual", "documentType": "Reisepass", "documentNumber": "SYNTHETISCH-DASH"}, nil, "", 201)
 	check(store.DashboardCounts{AvailableBikes: 3, TotalBikes: 3, RegisteredPeople: 2})
 	createBikeHTTP(t, app, "Dashboard Testfahrrad")
+	check(store.DashboardCounts{AvailableBikes: 4, TotalBikes: 4, RegisteredPeople: 2})
+	// Future hourly reservations with all extras must not count as physical issues.
+	future := domain.Today(time.Now().AddDate(0, 0, 1))
+	pending, _ := json.Marshal(domain.BookingInput{PersonID: "demo-person-01", BikeID: "demo-bike-03", BikeType: "Rennrad", Mode: "hour", StartsOn: future + "T10:00", EndsOn: future + "T11:00", TariffVersion: 1, Extras: domain.Extras{Helmet: true, Protection: true, Insurance: true}})
+	booked := call(t, app, "POST", "/api/ausleihen", "application/json", strings.NewReader(string(pending)), 201)
+	var futureRental rentalResponse
+	_ = json.Unmarshal(booked.Body.Bytes(), &futureRental)
+	check(store.DashboardCounts{AvailableBikes: 4, TotalBikes: 4, RegisteredPeople: 2})
+	call(t, app, "PUT", "/api/ausleihen/"+futureRental.ID+"/stornierung", "", nil, 200)
 	check(store.DashboardCounts{AvailableBikes: 4, TotalBikes: 4, RegisteredPeople: 2})
 	body := bookingBody("demo-person-01", "demo-bike-01", 1)
 	w := call(t, app, "POST", "/api/ausleihen", "application/json", strings.NewReader(body), 201)

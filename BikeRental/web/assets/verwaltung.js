@@ -103,7 +103,7 @@
     const list=await request(api);if(own!==generation)return;
     content.innerHTML=`<div class="section-heading"><h2>${people?'Registrierte Personen':'Fahrräder im Inventar'}</h2><a class="button" href="#neu">${label} anlegen</a></div><div class="record-panel">${list.length ? `<ul class="record-list">${list.map(p=>`<li><a${!people?' class="inventory-bike"':''} href="#${encodeURIComponent(p.id)}"><span class="record-id">${esc(p.id)}</span><strong>${esc(p.name)}${!people?`<small class="bike-type">${esc(p.type)}</small>`:''}</strong>${!people?bikePicture(p):''}<span aria-hidden="true">→</span></a></li>`).join('')}</ul>` : `<p>Noch keine ${people?'Personen':'Fahrräder'} vorhanden. Lege den ersten Eintrag an.</p>`}</div>`;
    }
-  } catch(error) {if(own!==generation)return;content.innerHTML='<p id="form-error" role="alert" tabindex="-1"></p><a href="#">Zur Übersicht</a>';showErrors(error);}
+  } catch(error) {if(own!==generation)return;content.innerHTML='<p id="form-error" role="alert" tabindex="-1"></p><div class="actions"><button type="button" id="retry-management">Erneut laden</button><a href="#">Zur Übersicht</a></div>';showErrors(error);content.querySelector('#retry-management').addEventListener('click',()=>{notice('');render().then(()=>{const heading=content.querySelector('h2');if(heading){heading.tabIndex=-1;heading.focus();}});});}
  }
  window.addEventListener('hashchange',()=>{
   notice(savedNotice ? `${label} gespeichert.` : '');savedNotice=false;
