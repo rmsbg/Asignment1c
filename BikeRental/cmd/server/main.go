@@ -46,7 +46,7 @@ func run(ctx context.Context, demo bool) error {
 	}
 	done := make(chan error, 1)
 	go func() { done <- server.Serve(listener) }()
-	log.Printf("BikeRental Phase 1: http://127.0.0.1:8080 (Demomodus: %t). Beenden mit Ctrl+C.", demo)
+	log.Printf("BikeRental Phase 2: http://127.0.0.1:8080 (Demomodus: %t). Beenden mit Ctrl+C.", demo)
 	select {
 	case err := <-done:
 		if !errors.Is(err, http.ErrServerClosed) {

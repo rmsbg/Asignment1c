@@ -25,11 +25,11 @@ Das oberste Git-Repository versioniert Arbeitskopie und Dokumentation.
 obersten Repository ausgeschlossen. Herkunft und Wiederverwendung sind in
 [Phase 0](00-grundlagen.md) festgehalten.
 
-Seit Phase 1 verwendet `BikeRental/` Fahrradmodelle, Fahrrad-API-Felder und
-Demodaten mit drei Typen und Bildern. Eine gemeinsame Tagesstaffel bleibt als
-Übergangslösung bis Phase 2 erhalten; Stundenmiete und Extras sind noch nicht
-implementiert. Der folgende Strukturbaum ist relativ zu `BikeRental/`;
-`specs/` wird zentral eine Ebene darüber gepflegt.
+Seit Phase 2 verwendet `BikeRental/` Stunden- und Tagesmieten mit typabhängigen
+Tarifen, gemeinsamen UTC-Intervallen und festgehaltenen Buchungspreisen. Die
+Fahrradverwaltung und Bilder aus Phase 1 bleiben erhalten. Extras folgen in
+Phase 3. Der folgende Strukturbaum ist relativ zu `BikeRental/`; `specs/` wird
+zentral eine Ebene darüber gepflegt.
 
 Die übernommene Schichtung bleibt erhalten:
 
@@ -55,23 +55,26 @@ Inventarmodell, Bezeichnungen, API-Felder, Beispiele und Tests werden konsistent
 auf Fahrräder umgestellt. Interne Ski-Namen dürfen nicht ungeprüft in neue
 Schnittstellen oder die sichtbare Oberfläche übernommen werden.
 
-Das Inventarmodell erhält Fahrradtyp und Bildzuordnung. Die Tariflogik wird von
-einem gemeinsamen Tagestarif auf typ- und mietartabhängige Preise erweitert.
-Buchungen benötigen im Zielzustand Mietart, vereinbarten Zeitraum, Zusatzleistungen
-und einen nachvollziehbaren Preisstand. Phase 1 verwendet vorerst weiterhin
-Kalenderdaten und den gemeinsamen Tagestarif. Exakte Felder und Endpunkte legt die jeweilige
+Das Inventarmodell enthält Fahrradtyp und Bildzuordnung. Die Tariflogik verwendet
+je Typ einen Stundenpreis und eine Tagesstaffel mit Zusatztag; die Tarife werden
+als vollständige Sammlung mit gemeinsamem Versionszähler geändert. Buchungen
+halten Typ, Mietart, Zeitraum, normalisierte UTC-Grenzen, Dauer und Preis fest.
+Zusatzleistungen ergänzen diese Daten in Phase 3. Exakte Felder und Endpunkte legt die jeweilige
 Feature-Spezifikation vor der Implementierung fest.
 
 ## Zeit, Preise und Konsistenz
 
 - Geschäftskalender und lokale Eingaben richten sich nach `Europe/Vienna`.
   Ereigniszeitpunkte werden wie bisher in UTC gespeichert. Stundenmieten
-  erfordern Uhrzeiten; die bisherigen reinen Datumsfelder reichen dafür nicht.
+  verwenden lokale Uhrzeiten mit Minutengenauigkeit; Eingaben mit Zeitzonenoffset
+  oder Sekunden werden abgelehnt. Für Tagesmieten bleiben reine Datumsfelder.
 - Stunden- und Tagesmieten verwenden eine gemeinsame Verfügbarkeitsprüfung.
   Intervalle sind `[Beginn, Ende)` ohne Puffer. Tagesmieten reichen von lokaler
   Mitternacht bis Mitternacht nach dem letzten Tag. Mehrdeutige oder nicht
   existierende lokale Eingabezeiten werden abgelehnt; Stundenabrechnung verwendet
-  tatsächlich verstrichene Zeit. Beispiele stehen in [Phase 0](00-grundlagen.md).
+  tatsächlich verstrichene Zeit. Beginn darf bei Stundenmiete nicht vor der aktuellen
+  Minute liegen. Die serverseitige Prüfung schneidet dafür Sekunden ab. Beispiele
+  stehen in [Phase 0](00-grundlagen.md), Verträge in [Phase 2](02-mietzeiten-preise.md).
 - EUR-Beträge werden als ganze Cent mit Überlaufprüfung verarbeitet. Die bisherige
   Begrenzung auf exakt in JavaScript darstellbare Ganzzahlen bleibt erhalten.
   Das Backend berechnet Grundpreis, Extras und Gesamtpreis.
@@ -108,8 +111,8 @@ die Oberfläche zeigt verständliche deutsche Fehlermeldungen.
 Loopback-Adresse `http://127.0.0.1:8080`, leerer Normalstart und optionaler
 `-demo`-Start bleiben erhalten. BikeRental-Demodaten sollen alle drei Fahrradtypen,
 geeignete Bilder, synthetische Personen und nachvollziehbare Beispieltarife
-abdecken. Seit Phase 1 sind die drei Typen mit Bildern vorhanden; der bisherige
-gemeinsame Demotagestarif bleibt bis Phase 2 bestehen. Die Oberfläche kennzeichnet Demodaten und Datenverlust
+abdecken. Seit Phase 2 sind je Typ Stundenpreis und Tagesstaffel eingerichtet;
+konkrete synthetische Beispielbeträge stehen in README und Phase-2-Spezifikation. Die Oberfläche kennzeichnet Demodaten und Datenverlust
 beim Neustart.
 
 Aus dem Go-Modulverzeichnis `BikeRental/`:

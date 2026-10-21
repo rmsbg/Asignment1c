@@ -16,17 +16,16 @@ Das System soll kostensparend entwickelt werden und daher zu möglichst großen 
 - exakt wie bei „SkiRental“
 
 
-## Entwicklungsstand – Phase 1
+## Entwicklungsstand – Phase 2
 
-**Phase 1 ist implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
-vom Auftraggeber abgenommen. [Prüfnachweis und Screenshots](specs/01-fahrradverwaltung.md).**
-Phase 0 ist am 21.10.2026 ausdrücklich abgenommen und mit `28aa829` gesichert.
+**Phase 2 ist implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
+vom Auftraggeber abgenommen. [Prüfnachweis und Screenshots](specs/02-mietzeiten-preise.md).**
+Phase 0 ist mit `28aa829`, die ausdrücklich abgenommene Phase 1 mit `b8901d2` gesichert.
 
-Die Arbeitskopie liegt in `BikeRental/` (Go-Modul `bikerental`). Sie baut auf dem
-SkiRental-Stand bis einschließlich dessen Phase 5 auf. Fahrräder werden jetzt mit
-Typ und Pflichtbild angelegt und bei der Ausleihe mit Bild ausgewählt.
-**Derzeit gilt für alle Typen dieselbe Tagesstaffel.** Stundenmiete und Preise je
-Fahrradtyp folgen in Phase 2, Helm/Schutzausrüstung/Versicherung in Phase 3.
+Die Arbeitskopie liegt in `BikeRental/` (Go-Modul `bikerental`) und baut auf
+SkiRental auf. Fahrräder mit Typ und Pflichtbild werden jetzt stundenweise oder
+tageweise zu typabhängigen Preisen gebucht. Helm/Schutzausrüstung/Versicherung
+folgen in Phase 3.
 
 `SkiRental/` bleibt unveränderte Referenz mit eigenem Git-Repository. Das oberste
 Git-Repository umfasst BikeRental und Dokumentation; die Referenz ist darin
@@ -51,10 +50,19 @@ nacheinander gestartet; ist Port 8080 belegt, zuerst den anderen Dienst beenden.
 Der Server bindet nur an Loopback. Es gibt keine Benutzerkonten und keinen
 produktiven Betrieb; ausschließlich synthetische Kundendaten verwenden.
 
-Normalstart: leerer Store ohne Tarif. Demo: je ein Downhill-, MTB- und Rennrad mit
-mitgelieferter Illustration, eine synthetische Person und der Übergangstagestarif
-25/45/60 EUR für 1/2/3 Tage plus 15 EUR je Zusatztag. Alle Änderungen und Uploads
-gehen beim Neustart verloren. Für Normalmodus vor dem Buchen einen Tarif einrichten.
+Normalstart: leerer Store ohne Tarife. Demo: je ein Downhill-, MTB- und Rennrad
+mit Illustration, eine synthetische Person und folgende Beispielpreise:
+
+| Typ | Stunde | Gesamtpreis 1 / 2 / 3 Tage | Zusatztag |
+| --- | --- | --- | --- |
+| Downhill | 12 EUR | 40 / 70 / 95 EUR | 25 EUR |
+| MTB | 8 EUR | 25 / 45 / 60 EUR | 15 EUR |
+| Rennrad | 10 EUR | 35 / 60 / 80 EUR | 20 EUR |
+
+Alle Änderungen und Uploads gehen beim Neustart verloren. Im Normalmodus vor der
+ersten Buchung unter **Tarife verwalten** die drei vollständigen Tarifstaffeln
+inklusive Stundenpreis einrichten. Alle EUR-Beträge akzeptieren Komma oder Punkt
+und höchstens zwei Nachkommastellen; die Preise sind bearbeitbar.
 
 In dieser Arbeitsumgebung liegt die geprüfte Toolchain temporär unter
 `/private/tmp/skirental-toolchain/go`. Falls Go nicht im PATH liegt:
@@ -75,16 +83,34 @@ Speichern erscheinen generierte ID, Name, Typ und Bild. In der Detailansicht fü
 
 Die Personenverwaltung bietet weiterhin manuellen Ausweisnachweis oder ein
 JPEG-/PNG-Foto. Nach Registrierung führt **Fahrrad ausleihen** zum vorausgewählten
-Kunden. Unter **Neue Ausleihe** Person und Datumsbereich wählen, dann **Verfügbarkeit
-und Preis prüfen**. Freie Fahrräder erscheinen mit Bild, Name, Typ und ID als
-Auswahlkarten. Auswahl per Klick oder Tabulator, Leertaste und Pfeiltasten.
-Datumsänderungen verwerfen die bisherige Auswahl und verlangen erneute Prüfung.
+Kunden. Unter **Neue Ausleihe** Person, Fahrradtyp und Mietart wählen, dann Beginn
+und geplante Rückgabe eingeben. **Verfügbarkeit und Preis prüfen** zeigt den Preis
+und passende freie Fahrräder mit Bild, Name, Typ und ID. Auswahl per Klick oder
+Tabulator/Leertaste/Pfeiltasten. Änderungen an Zeit, Typ oder Mietart verwerfen
+Auswahl und Preisvorschau und verlangen eine erneute Prüfung.
+
+- **Stundenmiete:** Eingabe minutengenau in Wiener Zeit, mindestens eine berechnete
+  Stunde, angefangene Stunden aufrunden. 10:00–11:15 kostet zwei Stunden, reserviert
+  aber nur bis 11:15. Über Mitternacht möglich. **Mietbeginn jetzt** füllt die
+  aktuelle Wiener Minute und eine geplante Stunde aus.
+- **Tagesmiete:** Beide Randtage zählen vollständig. Montag bis Dienstag sind zwei
+  Tage, reserviert bis Mittwoch 00:00. Nach der Tagesstaffel gilt der Zusatztagspreis.
+- **Zeitzone:** Europe/Vienna, auch wenn der Browser eine andere Zeitzone verwendet.
+  Nicht existierende/doppeldeutige Eingabezeiten bei Zeitumstellungen sind unzulässig.
+  Tagespreise zählen Kalendertage; Stundenpreise die tatsächlich verstrichene Zeit.
 
 Nach **Zum angezeigten Preis buchen** erfolgt die Ausgabe separat über
-**Fahrrad ausgeben**, später **Rückgabe erfassen**. Offene Buchungen können vor
-Ausgabe storniert werden. Beide Randtage zählen; Änderungen am Übergangstarif
-ändern bestehende Preise nicht. Das Dashboard zählt tatsächlich ausgegebene Fahrräder.
-Die Verwaltung und die interaktiven Abläufe benötigen JavaScript.
+**Fahrrad ausgeben**, später **Rückgabe erfassen**. Ausgabe nur innerhalb des
+gebuchten Zeitraums und nach tatsächlicher Rückgabe des vorherigen Vorgangs.
+Direkte Anschlussbuchungen sind möglich, Doppelbuchungen beider Mietarten werden
+verhindert. Noch nicht ausgegebene Buchungen sind stornierbar. Abgelaufene und
+überfällige Vorgänge werden markiert; **Aktualisieren** lädt deren aktuellen Stand.
+
+Bei zwischenzeitlicher Tarif- oder Typänderung muss der neue Preis nochmals geprüft
+und bestätigt werden. Bestehende Buchungen behalten den gebuchten Typ, Mietart,
+Dauer und Preis auch bei späterer Ausgabe oder früher/später Rückgabe.
+Das Dashboard zählt tatsächlich ausgegebene Fahrräder. Die interaktiven Abläufe
+benötigen JavaScript.
 
 ### Build und Prüfung
 
@@ -114,6 +140,7 @@ aus ihrem mitgelieferten Zeichencode neu erzeugt werden.
 - [Roadmap](specs/roadmap.md)
 - [Phase 0: Grundlagen und Prüfnachweis](specs/00-grundlagen.md)
 - [Phase 1: Fahrradverwaltung, API und Prüfnachweis](specs/01-fahrradverwaltung.md)
+- [Phase 2: Mietzeiten, Tarife und Prüfnachweis](specs/02-mietzeiten-preise.md)
 
 Nach technischem Abschluss und ausdrücklicher Auftraggeberabnahme jeder Phase
 wird ein lokaler Git-Commit erstellt. Ein Implementierungsauftrag allein gilt

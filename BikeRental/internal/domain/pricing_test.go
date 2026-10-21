@@ -35,29 +35,34 @@ func TestCalendarDuration(t *testing.T) {
 	}
 }
 func TestTariffPrices(t *testing.T) {
-	tariff := Tariff{Version: 7, PricesCents: []int64{2500, 4500, 6000}, ExtraDayCents: 1500}
+	rate := Rate{HourlyCents: 800, PricesCents: []int64{2500, 4500, 6000}, ExtraDayCents: 1500}
 	for days, want := range map[int]int64{1: 2500, 2: 4500, 3: 6000, 4: 7500, 8: 13500} {
-		got, err := tariff.Price(days)
-		if err != nil || got.TotalPriceCents != want || got.DurationDays != days || got.TariffVersion != 7 {
-			t.Fatalf("quote=%+v err=%v", got, err)
+		got, err := rate.Price("day", days)
+		if err != nil || got != want {
+			t.Fatalf("price=%d err=%v", got, err)
 		}
 	}
-	for _, bad := range []Tariff{{}, {PricesCents: []int64{-1}}, {PricesCents: []int64{1}, ExtraDayCents: -1}, {PricesCents: []int64{MaxMoneyCents + 1}}} {
+	for _, bad := range []Rate{{}, {HourlyCents: -1, PricesCents: []int64{1}}, {PricesCents: []int64{-1}}, {PricesCents: []int64{1}, ExtraDayCents: -1}, {PricesCents: []int64{MaxMoneyCents + 1}}} {
 		if bad.Validate() == nil {
-			t.Fatal("invalid tariff accepted")
+			t.Fatal("invalid rate accepted")
 		}
 	}
-	limit := Tariff{PricesCents: []int64{MaxMoneyCents}, ExtraDayCents: 1}
-	if _, err := limit.Price(1); err != nil {
-		t.Fatal(err)
+	limit := Rate{HourlyCents: MaxMoneyCents, PricesCents: []int64{MaxMoneyCents}, ExtraDayCents: 1}
+	for _, mode := range []string{"day", "hour"} {
+		if _, err := limit.Price(mode, 1); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := limit.Price(mode, 2); err == nil {
+			t.Fatal("overflow accepted")
+		}
+		if _, err := rate.Price(mode, 0); err == nil {
+			t.Fatal("zero duration accepted")
+		}
+		if _, err := (Rate{PricesCents: []int64{0}}).Price(mode, 4); err != nil {
+			t.Fatal(err)
+		}
 	}
-	if _, err := limit.Price(2); err == nil {
-		t.Fatal("price overflow accepted")
-	}
-	if _, err := tariff.Price(0); err == nil {
-		t.Fatal("zero duration accepted")
-	}
-	if _, err := (Tariff{PricesCents: []int64{0}}).Price(4); err != nil {
-		t.Fatal("zero price rejected")
+	if _, err := rate.Price("invalid", 1); err == nil {
+		t.Fatal("invalid mode accepted")
 	}
 }

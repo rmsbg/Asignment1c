@@ -19,11 +19,11 @@ func TestPhase5HTTPContracts(t *testing.T) {
 		t.Fatal(err)
 	}
 	empty := call(t, app, "GET", "/api/tarife", "", nil, 200)
-	if !strings.Contains(empty.Body.String(), `"version":0`) || !strings.Contains(empty.Body.String(), `"pricesCents":[]`) {
+	if !strings.Contains(empty.Body.String(), `"version":0`) || !strings.Contains(empty.Body.String(), `"types":{}`) {
 		t.Fatal("invalid empty tariff")
 	}
 	today := domain.Today(time.Now())
-	dates := fmt.Sprintf(`{"startsOn":%q,"endsOn":%q}`, today, today)
+	dates := fmt.Sprintf(`{"bikeType":"MTB","mode":"day","startsOn":%q,"endsOn":%q}`, today, today)
 	call(t, app, "POST", "/api/ausleihen/preis", "application/json", strings.NewReader(dates), 400)
 	for _, body := range []string{`null`, `{}`, `{"version":0,"pricesCents":[],"extraDayCents":1}`, `{"version":0,"pricesCents":[-1],"extraDayCents":1}`, `{"version":0,"pricesCents":[1.5],"extraDayCents":1}`, `{"version":0,"pricesCents":[null],"extraDayCents":1}`, `{"version":0,"pricesCents":[1],"extraDayCents":null}`, `{"version":0,"pricesCents":[1],"extraDayCents":1,"surprise":2}`} {
 		call(t, app, "PUT", "/api/tarife", "application/json", strings.NewReader(body), 400)
@@ -31,7 +31,7 @@ func TestPhase5HTTPContracts(t *testing.T) {
 			t.Fatal("invalid tariff changed store")
 		}
 	}
-	tariff := `{"version":0,"pricesCents":[2500,4500,6000],"extraDayCents":1500}`
+	tariff := tariffBody(0, []int64{2500, 4500, 6000}, 1500)
 	call(t, app, "PUT", "/api/tarife", "application/json", strings.NewReader(tariff), 200)
 	call(t, app, "PUT", "/api/tarife", "application/json", strings.NewReader(tariff), 409)
 	quote := call(t, app, "POST", "/api/ausleihen/preis", "application/json", strings.NewReader(dates), 200)
@@ -40,8 +40,8 @@ func TestPhase5HTTPContracts(t *testing.T) {
 	if price.TotalPriceCents != 2500 || price.DurationDays != 1 || price.TariffVersion != 1 {
 		t.Fatal("wrong quote")
 	}
-	call(t, app, "GET", "/api/fahrraeder/verfuegbar?startsOn="+today, "", nil, 400)
-	call(t, app, "GET", "/api/fahrraeder/verfuegbar?startsOn=&endsOn=", "", nil, 400)
+	call(t, app, "GET", "/api/fahrraeder/verfuegbar?mode=day&startsOn="+today, "", nil, 400)
+	call(t, app, "GET", "/api/fahrraeder/verfuegbar?mode=day&startsOn=&endsOn=", "", nil, 400)
 	call(t, app, "POST", "/api/ausleihen/preis", "application/json", strings.NewReader(`{"startsOn":"2020-01-01","endsOn":"2020-01-02"}`), 400)
 	call(t, app, "POST", "/api/ausleihen/preis", "text/plain", strings.NewReader(dates), 415)
 	call(t, app, "POST", "/api/ausleihen/preis", "application/json", strings.NewReader(`{"startsOn":"`+strings.Repeat("x", 70000)+`"}`), 413)
@@ -57,14 +57,14 @@ func TestPhase5BookingHTTPFlow(t *testing.T) {
 	created := call(t, app, "POST", "/api/ausleihen", "application/json", strings.NewReader(body), 201)
 	var booked rentalResponse
 	_ = json.Unmarshal(created.Body.Bytes(), &booked)
-	if booked.Status != "booked" || booked.RentedAt != nil || booked.TotalPriceCents != 2500 || booked.DurationDays != 1 {
+	if booked.Status != "booked" || booked.RentedAt != nil || booked.TotalPriceCents != 4000 || booked.DurationDays != 1 {
 		t.Fatal("wrong booked response")
 	}
 	if s.Dashboard().RentedBikes != 0 {
 		t.Fatal("booking counted as issue")
 	}
 	today := domain.Today(time.Now())
-	query := "/api/fahrraeder/verfuegbar?startsOn=" + today + "&endsOn=" + today
+	query := "/api/fahrraeder/verfuegbar?mode=day&startsOn=" + today + "&endsOn=" + today
 	available := call(t, app, "GET", query, "", nil, 200)
 	if strings.Contains(available.Body.String(), "demo-bike-01") {
 		t.Fatal("reserved pair offered for same date")
@@ -98,7 +98,7 @@ func TestPhase5BookingHTTPFlow(t *testing.T) {
 		t.Fatal("issue changed timestamp")
 	}
 	call(t, app, "PUT", path+"/stornierung", "", nil, 409)
-	call(t, app, "PUT", "/api/tarife", "application/json", strings.NewReader(`{"version":1,"pricesCents":[3000],"extraDayCents":1000}`), 200)
+	call(t, app, "PUT", "/api/tarife", "application/json", strings.NewReader(tariffBody(1, []int64{3000}, 1000)), 200)
 	staleBody := bookingBody("demo-person-01", "demo-bike-02", 1)
 	before = s.Snapshot()
 	call(t, app, "POST", "/api/ausleihen", "application/json", strings.NewReader(staleBody), 409)
@@ -108,7 +108,7 @@ func TestPhase5BookingHTTPFlow(t *testing.T) {
 	returned := call(t, app, "PUT", path+"/rueckgabe", "", nil, 200)
 	var done rentalResponse
 	_ = json.Unmarshal(returned.Body.Bytes(), &done)
-	if done.Status != "returned" || done.TotalPriceCents != 2500 || done.TariffVersion != 1 || s.Dashboard().RentedBikes != 0 {
+	if done.Status != "returned" || done.TotalPriceCents != 4000 || done.TariffVersion != 1 || s.Dashboard().RentedBikes != 0 {
 		t.Fatal("return changed booked price")
 	}
 	for _, action := range []string{"ausgabe", "rueckgabe", "stornierung"} {
@@ -117,7 +117,7 @@ func TestPhase5BookingHTTPFlow(t *testing.T) {
 	// A future booking can be cancelled, but never issued before its first date.
 	tomorrow := time.Now().AddDate(0, 0, 1)
 	future := domain.Today(tomorrow)
-	futureBody := fmt.Sprintf(`{"personID":"demo-person-01","bikeID":"demo-bike-01","startsOn":%q,"endsOn":%q,"tariffVersion":2}`, future, future)
+	futureBody := fmt.Sprintf(`{"personID":"demo-person-01","bikeID":"demo-bike-01","bikeType":"Downhill","mode":"day","startsOn":%q,"endsOn":%q,"tariffVersion":2}`, future, future)
 	response := call(t, app, "POST", "/api/ausleihen", "application/json", strings.NewReader(futureBody), 201)
 	var futureRental rentalResponse
 	_ = json.Unmarshal(response.Body.Bytes(), &futureRental)

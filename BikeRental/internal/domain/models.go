@@ -15,7 +15,7 @@ type Person struct {
 	PhotoURL            string `json:"photoURL,omitempty"`
 }
 
-// Bike represents a pair of bikes rented and returned together.
+// Bike represents one individually identified bicycle.
 type Bike struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
@@ -26,7 +26,22 @@ type Bike struct {
 }
 
 // Rental separates the agreed calendar period from actual issue and return.
+type BookingInput struct {
+	PersonID      string `json:"personID"`
+	BikeID        string `json:"bikeID"`
+	BikeType      string `json:"bikeType"`
+	Mode          string `json:"mode"`
+	StartsOn      string `json:"startsOn"`
+	EndsOn        string `json:"endsOn"`
+	TariffVersion uint64 `json:"tariffVersion"`
+}
+
 type Rental struct {
+	BikeType        string
+	Mode            string
+	StartsAt        time.Time
+	EndsAt          time.Time
+	DurationHours   int
 	ID              string
 	CreatedAt       time.Time
 	StartsOn        string

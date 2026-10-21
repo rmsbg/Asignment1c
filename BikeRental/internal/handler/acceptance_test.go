@@ -102,7 +102,7 @@ func TestMVPAcceptanceWorkflow(t *testing.T) {
 					}
 				}
 				if !demo {
-					call(t, app, "PUT", "/api/tarife", "application/json", strings.NewReader(`{"version":0,"pricesCents":[2500,4500,6000],"extraDayCents":1500}`), 200)
+					call(t, app, "PUT", "/api/tarife", "application/json", strings.NewReader(tariffBody(0, []int64{2500, 4500, 6000}, 1500)), 200)
 				}
 				input := []byte(bookingBody(person.ID, bike.ID, 1))
 				create := func() rentalResponse {

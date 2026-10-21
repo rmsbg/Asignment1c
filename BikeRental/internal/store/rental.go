@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"time"
 
 	"bikerental/internal/domain"
 )
@@ -17,18 +18,18 @@ func (e MissingReference) Unwrap() error { return ErrNotFound }
 
 // RentalDetails joins current names under the same lock without identity evidence.
 type RentalDetails struct {
-	Today      string
+	Now        time.Time
 	Rental     domain.Rental
 	PersonName string
 	BikeName   string
 }
 
 func (s *Store) rentalDetailsLocked(r domain.Rental) RentalDetails {
-	return RentalDetails{Today: domain.Today(s.now()), Rental: r, PersonName: s.people[r.PersonID].Name, BikeName: s.bikes[r.BikeID].Name}
+	return RentalDetails{Now: s.now().UTC(), Rental: r, PersonName: s.people[r.PersonID].Name, BikeName: s.bikes[r.BikeID].Name}
 }
-func (s *Store) availablePeriodLocked(bikeID, start, end string) bool {
+func (s *Store) availablePeriodLocked(bikeID string, start, end time.Time) bool {
 	for _, r := range s.rentals {
-		if r.BikeID == bikeID && r.BlocksPeriod() && r.StartsOn <= end && start <= r.EndsOn {
+		if r.BikeID == bikeID && r.BlocksPeriod() && r.StartsAt.Before(end) && start.Before(r.EndsAt) {
 			return false
 		}
 	}
@@ -55,8 +56,8 @@ func (s *Store) AvailableBikes() []domain.Bike {
 }
 
 // CreateRental validates price, references and overlap in one atomic operation.
-func (s *Store) CreateRental(personID, bikeID, start, end string, version uint64) (RentalDetails, error) {
-	personID, bikeID, err := domain.ValidateRentalReferences(personID, bikeID)
+func (s *Store) CreateRental(input domain.BookingInput) (RentalDetails, error) {
+	personID, bikeID, err := domain.ValidateRentalReferences(input.PersonID, input.BikeID)
 	if err != nil {
 		return RentalDetails{}, err
 	}
@@ -65,36 +66,48 @@ func (s *Store) CreateRental(personID, bikeID, start, end string, version uint64
 	if _, ok := s.people[personID]; !ok {
 		return RentalDetails{}, MissingReference{Field: "personID"}
 	}
-	if _, ok := s.bikes[bikeID]; !ok {
+	bike, ok := s.bikes[bikeID]
+	if !ok {
 		return RentalDetails{}, MissingReference{Field: "bikeID"}
 	}
-	quote, err := s.quoteLocked(start, end)
+	if !domain.ValidBikeType(input.BikeType) {
+		return RentalDetails{}, domain.ValidationErrors{"bikeType": "Bitte einen gültigen Fahrradtyp auswählen."}
+	}
+	if bike.Type != input.BikeType {
+		return RentalDetails{}, Conflict{"bikeType", "Der Fahrradtyp wurde geändert. Bitte Verfügbarkeit und Preis erneut prüfen."}
+	}
+	quote, err := s.quoteLocked(bike.Type, input.Mode, input.StartsOn, input.EndsOn)
 	if err != nil {
 		return RentalDetails{}, err
 	}
-	if version != quote.TariffVersion {
+	if input.TariffVersion == 0 {
+		return RentalDetails{}, domain.ValidationErrors{"tariffVersion": "Bitte zuerst den Preis prüfen und bestätigen."}
+	}
+	if input.TariffVersion != quote.TariffVersion {
 		return RentalDetails{}, Conflict{"tariffVersion", "Der Tarif wurde geändert. Bitte den neuen Preis prüfen und erneut bestätigen."}
 	}
-	if !s.availablePeriodLocked(bikeID, start, end) {
+	if !s.availablePeriodLocked(bikeID, quote.StartsAt, quote.EndsAt) {
 		return RentalDetails{}, ErrUnavailable
 	}
 	s.nextRental++
 	r := domain.Rental{ID: fmt.Sprintf("ausleihe-%06d", s.nextRental), PersonID: personID, BikeID: bikeID,
-		CreatedAt: s.now().UTC(), StartsOn: start, EndsOn: end, DurationDays: quote.DurationDays,
+		BikeType: bike.Type, Mode: input.Mode, StartsAt: quote.StartsAt, EndsAt: quote.EndsAt, DurationHours: quote.DurationHours,
+		CreatedAt: s.now().UTC(), StartsOn: input.StartsOn, EndsOn: input.EndsOn, DurationDays: quote.DurationDays,
 		TotalPriceCents: quote.TotalPriceCents, TariffVersion: quote.TariffVersion}
 	s.rentals[r.ID] = r
 	return s.rentalDetailsLocked(r), nil
 }
 
-func (s *Store) AvailableFor(start, end string) ([]domain.Bike, error) {
+func (s *Store) AvailableFor(mode, start, end string) ([]domain.Bike, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	if _, err := domain.PeriodDays(start, end, domain.Today(s.now())); err != nil {
+	period, err := domain.BuildPeriod(mode, start, end, s.now())
+	if err != nil {
 		return nil, err
 	}
 	result := []domain.Bike{}
 	for id, bike := range s.bikes {
-		if s.availablePeriodLocked(id, start, end) {
+		if s.availablePeriodLocked(id, period.StartsAt, period.EndsAt) {
 			result = append(result, cloneBike(bike))
 		}
 	}
@@ -114,8 +127,8 @@ func (s *Store) IssueRental(id string) (RentalDetails, error) {
 	if !r.RentedAt.IsZero() {
 		return s.rentalDetailsLocked(r), nil
 	}
-	today := domain.Today(s.now())
-	if today < r.StartsOn || today > r.EndsOn {
+	now := s.now()
+	if now.Before(r.StartsAt) || !now.Before(r.EndsAt) {
 		return RentalDetails{}, Conflict{"form", "Die Ausgabe ist nur innerhalb des gebuchten Zeitraums möglich."}
 	}
 	for _, other := range s.rentals {

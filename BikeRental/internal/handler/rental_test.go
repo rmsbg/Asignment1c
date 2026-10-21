@@ -64,7 +64,7 @@ func TestRentalAPI(t *testing.T) {
 		t.Fatal("rented bike offered")
 	}
 	// Multiple active rentals for the same person are valid.
-	second := call(t, app, "POST", "/api/ausleihen", "application/json", strings.NewReader(strings.Replace(body, "demo-bike-01", "demo-bike-02", 1)), 201)
+	second := call(t, app, "POST", "/api/ausleihen", "application/json", strings.NewReader(bookingBody("demo-person-01", "demo-bike-02", 1)), 201)
 	var secondRental rentalResponse
 	_ = json.Unmarshal(second.Body.Bytes(), &secondRental)
 	issueHTTP(t, app, secondRental.ID)

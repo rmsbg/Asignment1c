@@ -54,7 +54,7 @@ func TestRentalLifecycle(t *testing.T) {
 		t.Fatal("return failed")
 	}
 	again, err := s.ReturnRental(r.ID)
-	if err != nil || !reflect.DeepEqual(returned, again) {
+	if err != nil || !reflect.DeepEqual(returned.Rental, again.Rental) {
 		t.Fatal("repeated return changed timestamp")
 	}
 	replacement, err := createIssued(s, "demo-person-01", "demo-bike-01")

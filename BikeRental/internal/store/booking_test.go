@@ -6,8 +6,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"bikerental/internal/domain"
 )
 
 func datedStore() *Store {
@@ -17,7 +15,7 @@ func datedStore() *Store {
 }
 func book(t *testing.T, s *Store, bike, start, end string) RentalDetails {
 	t.Helper()
-	r, err := s.CreateRental("demo-person-01", bike, start, end, s.Tariff().Version)
+	r, err := createDay(s, "demo-person-01", bike, start, end, s.Tariff().Version)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -26,17 +24,17 @@ func book(t *testing.T, s *Store, bike, start, end string) RentalDetails {
 func TestBookingOverlapAndLifecycle(t *testing.T) {
 	s := datedStore()
 	first := book(t, s, "demo-bike-01", "2026-10-21", "2026-10-23")
-	if first.Rental.Active() || first.Rental.TotalPriceCents != 6000 || first.Rental.Status(first.Today) != "booked" {
+	if first.Rental.Active() || first.Rental.TotalPriceCents != 9500 || first.Rental.Status(first.Now) != "booked" {
 		t.Fatal("wrong booking")
 	}
 	assertCounts(t, s, DashboardCounts{AvailableBikes: 3, TotalBikes: 3, RegisteredPeople: 1})
-	available, _ := s.AvailableFor("2026-10-23", "2026-10-24")
+	available, _ := s.AvailableFor("day", "2026-10-23", "2026-10-24")
 	if len(available) != 2 {
 		t.Fatal("inclusive availability failed")
 	}
 	before := s.Snapshot()
 	for _, period := range [][2]string{{"2026-10-21", "2026-10-21"}, {"2026-10-22", "2026-10-24"}, {"2026-10-23", "2026-10-23"}, {"2026-10-21", "2026-10-30"}} {
-		if _, err := s.CreateRental("demo-person-01", "demo-bike-01", period[0], period[1], 1); !errors.Is(err, ErrUnavailable) {
+		if _, err := createDay(s, "demo-person-01", "demo-bike-01", period[0], period[1], 1); !errors.Is(err, ErrUnavailable) {
 			t.Fatalf("overlap accepted: %v", err)
 		}
 	}
@@ -68,7 +66,7 @@ func TestBookingOverlapAndLifecycle(t *testing.T) {
 		t.Fatal("late predecessor did not block issue")
 	}
 	returned, err := s.ReturnRental(first.Rental.ID)
-	if err != nil || returned.Rental.TotalPriceCents != 6000 {
+	if err != nil || returned.Rental.TotalPriceCents != 9500 {
 		t.Fatal("late return changed price")
 	}
 	actual, err := s.IssueRental(next.Rental.ID)
@@ -104,13 +102,13 @@ func TestCancellationExpiryAndEarlyReturn(t *testing.T) {
 		t.Fatal(err)
 	}
 	returned, _ := s.ReturnRental(replacement.Rental.ID)
-	if returned.Rental.TotalPriceCents != 4500 {
+	if returned.Rental.TotalPriceCents != 7000 {
 		t.Fatal("early return changed price")
 	}
 	expired := book(t, s, "demo-bike-01", "2026-10-21", "2026-10-21")
 	s.now = func() time.Time { return time.Date(2026, 10, 22, 12, 0, 0, 0, time.UTC) }
 	detail, _ := s.Rental(expired.Rental.ID)
-	if detail.Rental.Status(detail.Today) != "expired" {
+	if detail.Rental.Status(detail.Now) != "expired" {
 		t.Fatal("booking did not expire")
 	}
 	if _, err := s.IssueRental(expired.Rental.ID); err == nil {
@@ -124,16 +122,16 @@ func TestTariffSnapshotsAndConflicts(t *testing.T) {
 	s := datedStore()
 	r := book(t, s, "demo-bike-01", "2026-10-21", "2026-10-24")
 	tariff := s.Tariff()
-	tariff.PricesCents[0] = 999
-	if s.Tariff().PricesCents[0] != 2500 {
+	tariff.Types["Downhill"].PricesCents[0] = 999
+	if s.Tariff().Types["Downhill"].PricesCents[0] != 4000 {
 		t.Fatal("tariff aliased")
 	}
 	saved, err := s.SaveTariff(tariff)
 	if err != nil || saved.Version != 2 {
 		t.Fatal(err)
 	}
-	saved.PricesCents[0] = 777
-	if s.Tariff().PricesCents[0] != 999 {
+	saved.Types["Downhill"].PricesCents[0] = 777
+	if s.Tariff().Types["Downhill"].PricesCents[0] != 999 {
 		t.Fatal("saved tariff aliased")
 	}
 	s.SeedDemo()
@@ -142,7 +140,7 @@ func TestTariffSnapshotsAndConflicts(t *testing.T) {
 	}
 	before := s.Snapshot()
 	oldTariff := s.Tariff()
-	if _, err := s.CreateRental("demo-person-01", "demo-bike-02", "2026-10-21", "2026-10-21", 1); err == nil {
+	if _, err := createDay(s, "demo-person-01", "demo-bike-02", "2026-10-21", "2026-10-21", 1); err == nil {
 		t.Fatal("stale price accepted")
 	}
 	if _, err := s.SaveTariff(tariff); err == nil {
@@ -152,14 +150,14 @@ func TestTariffSnapshotsAndConflicts(t *testing.T) {
 		t.Fatal("conflict mutated state")
 	}
 	existing, _ := s.Rental(r.Rental.ID)
-	if existing.Rental.TotalPriceCents != 7500 || existing.Rental.TariffVersion != 1 {
+	if existing.Rental.TotalPriceCents != 12000 || existing.Rental.TariffVersion != 1 {
 		t.Fatal("stored quote changed")
 	}
 	normal := New(false)
 	if normal.Tariff().Version != 0 {
 		t.Fatal("normal mode inherited tariff")
 	}
-	if _, err := normal.Quote("9999-01-01", "9999-01-01"); err == nil {
+	if _, err := normal.Quote("Downhill", "day", "9999-01-01", "9999-01-01"); err == nil {
 		t.Fatal("missing tariff quoted")
 	}
 }
@@ -169,7 +167,7 @@ func TestConcurrentBookingsAndTariffEdits(t *testing.T) {
 	results := make(chan error, 32)
 	for range 32 {
 		wg.Go(func() {
-			_, err := s.CreateRental("demo-person-01", "demo-bike-01", "2026-10-21", "2026-10-23", 1)
+			_, err := createDay(s, "demo-person-01", "demo-bike-01", "2026-10-21", "2026-10-23", 1)
 			results <- err
 		})
 	}
@@ -189,7 +187,7 @@ func TestConcurrentBookingsAndTariffEdits(t *testing.T) {
 	edits := make(chan error, 16)
 	for range 16 {
 		wg.Go(func() {
-			_, err := s.SaveTariff(domain.Tariff{Version: 1, PricesCents: []int64{100}, ExtraDayCents: 50})
+			_, err := s.SaveTariff(testTariff(1, []int64{100}, 50))
 			edits <- err
 		})
 	}
@@ -210,8 +208,7 @@ func TestAtomicPriceSnapshotDuringEdits(t *testing.T) {
 	s := datedStore()
 	// Every tariff version has a distinct, predictable daily price.
 	tariff := s.Tariff()
-	tariff.PricesCents = []int64{200}
-	tariff.ExtraDayCents = 0
+	tariff = testTariff(tariff.Version, []int64{200}, 0)
 	if _, err := s.SaveTariff(tariff); err != nil {
 		t.Fatal(err)
 	}
@@ -219,7 +216,7 @@ func TestAtomicPriceSnapshotDuringEdits(t *testing.T) {
 	wg.Go(func() {
 		for range 50 {
 			current := s.Tariff()
-			current.PricesCents = []int64{int64(current.Version+1) * 100}
+			current = testTariff(current.Version, []int64{int64(current.Version+1) * 100}, 0)
 			if _, err := s.SaveTariff(current); err != nil {
 				t.Error(err)
 			}
@@ -233,12 +230,12 @@ func TestAtomicPriceSnapshotDuringEdits(t *testing.T) {
 				return
 			}
 			for {
-				q, err := s.Quote("2026-10-21", "2026-10-21")
+				q, err := s.Quote("MTB", "day", "2026-10-21", "2026-10-21")
 				if err != nil {
 					t.Error(err)
 					return
 				}
-				r, err := s.CreateRental("demo-person-01", bike.ID, "2026-10-21", "2026-10-21", q.TariffVersion)
+				r, err := createDay(s, "demo-person-01", bike.ID, "2026-10-21", "2026-10-21", q.TariffVersion)
 				if err != nil {
 					var conflict Conflict
 					if errors.As(err, &conflict) {

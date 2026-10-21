@@ -37,7 +37,7 @@ func New(demo bool) *Store {
 	s := &Store{
 		demo:    demo,
 		now:     time.Now,
-		tariff:  domain.Tariff{PricesCents: []int64{}},
+		tariff:  domain.Tariff{Types: map[string]domain.Rate{}},
 		people:  make(map[string]domain.Person),
 		bikes:   make(map[string]domain.Bike),
 		rentals: make(map[string]domain.Rental),
@@ -61,7 +61,11 @@ func (s *Store) SeedDemo() {
 	defer s.mu.Unlock()
 
 	if s.tariff.Version == 0 {
-		s.tariff = domain.Tariff{Version: 1, PricesCents: []int64{2500, 4500, 6000}, ExtraDayCents: 1500}
+		s.tariff = domain.Tariff{Version: 1, Types: map[string]domain.Rate{
+			"Downhill": {HourlyCents: 1200, PricesCents: []int64{4000, 7000, 9500}, ExtraDayCents: 2500},
+			"MTB":      {HourlyCents: 800, PricesCents: []int64{2500, 4500, 6000}, ExtraDayCents: 1500},
+			"Rennrad":  {HourlyCents: 1000, PricesCents: []int64{3500, 6000, 8000}, ExtraDayCents: 2000},
+		}}
 	}
 	person := domain.Person{
 		ID: "demo-person-01", Name: "Demo Person",

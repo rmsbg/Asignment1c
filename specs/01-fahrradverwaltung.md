@@ -29,6 +29,9 @@ Lesezugriffe dürfen keine veränderbaren internen Bildpuffer offenlegen.
 
 ## Schnittstellen und Konsistenz
 
+Dieser Abschnitt beschreibt den abgenommenen Phase-1-Stand (`b8901d2`).
+Mietzeiten und Tarifverträge werden in [Phase 2](02-mietzeiten-preise.md) erweitert.
+
 - `GET /api/fahrraeder`: nach ID sortierte Liste; `GET /api/fahrraeder/{id}`: Detail.
   JSON enthält Bild-URL, keine eingebetteten Bildbytes.
 - `POST /api/fahrraeder` / `PUT /api/fahrraeder/{id}`: Multipart mit `name`, `type`,

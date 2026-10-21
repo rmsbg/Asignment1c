@@ -1,6 +1,9 @@
 package domain
 
-import "strings"
+import (
+	"strings"
+	"time"
+)
 
 func (r Rental) Active() bool { return !r.RentedAt.IsZero() && r.ReturnedAt.IsZero() }
 
@@ -22,7 +25,7 @@ func ValidateRentalReferences(personID, bikeID string) (string, string, error) {
 // BlocksPeriod remains true for issued rentals until actual return.
 func (r Rental) BlocksPeriod() bool { return r.ReturnedAt.IsZero() && r.CancelledAt.IsZero() }
 
-func (r Rental) Status(today string) string {
+func (r Rental) Status(now time.Time) string {
 	if !r.CancelledAt.IsZero() {
 		return "cancelled"
 	}
@@ -32,7 +35,7 @@ func (r Rental) Status(today string) string {
 	if !r.RentedAt.IsZero() {
 		return "issued"
 	}
-	if r.EndsOn < today {
+	if !now.Before(r.EndsAt) {
 		return "expired"
 	}
 	return "booked"

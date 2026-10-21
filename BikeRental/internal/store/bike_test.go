@@ -47,7 +47,7 @@ func TestBikeImagesAreAtomicAndIndependent(t *testing.T) {
 	for _, bikes := range [][]domain.Bike{s.Bikes(), s.AvailableBikes(), s.Snapshot().Bikes} {
 		bikes[0].Photo[0] ^= 1
 	}
-	available, err := s.AvailableFor(domain.Today(s.now()), domain.Today(s.now()))
+	available, err := s.AvailableFor("day", domain.Today(s.now()), domain.Today(s.now()))
 	if err != nil {
 		t.Fatal(err)
 	}

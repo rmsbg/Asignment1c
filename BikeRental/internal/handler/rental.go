@@ -13,6 +13,12 @@ import (
 )
 
 type rentalResponse struct {
+	BikeType        string     `json:"bikeType"`
+	Mode            string     `json:"mode"`
+	StartsAt        time.Time  `json:"startsAt"`
+	EndsAt          time.Time  `json:"endsAt"`
+	DurationHours   int        `json:"durationHours"`
+	CanIssue        bool       `json:"canIssue"`
 	ID              string     `json:"id"`
 	PersonID        string     `json:"personID"`
 	BikeID          string     `json:"bikeID"`
@@ -39,9 +45,10 @@ func optionalTime(t time.Time) *time.Time {
 }
 func exposeRental(d store.RentalDetails) rentalResponse {
 	r := d.Rental
-	return rentalResponse{ID: r.ID, PersonID: r.PersonID, BikeID: r.BikeID, PersonName: d.PersonName, BikeName: d.BikeName,
+	return rentalResponse{BikeType: r.BikeType, Mode: r.Mode, StartsAt: r.StartsAt, EndsAt: r.EndsAt, DurationHours: r.DurationHours,
+		CanIssue: r.Status(d.Now) == "booked" && !d.Now.Before(r.StartsAt) && d.Now.Before(r.EndsAt), ID: r.ID, PersonID: r.PersonID, BikeID: r.BikeID, PersonName: d.PersonName, BikeName: d.BikeName,
 		CreatedAt: r.CreatedAt, StartsOn: r.StartsOn, EndsOn: r.EndsOn, DurationDays: r.DurationDays, TotalPriceCents: r.TotalPriceCents,
-		TariffVersion: r.TariffVersion, Status: r.Status(d.Today), Overdue: r.Active() && r.EndsOn < d.Today,
+		TariffVersion: r.TariffVersion, Status: r.Status(d.Now), Overdue: r.Active() && !d.Now.Before(r.EndsAt),
 		RentedAt: optionalTime(r.RentedAt), ReturnedAt: optionalTime(r.ReturnedAt), CancelledAt: optionalTime(r.CancelledAt)}
 }
 
@@ -72,24 +79,35 @@ func registerRentals(mux *http.ServeMux, s *store.Store) {
 	mux.HandleFunc("GET /api/tarife", func(w http.ResponseWriter, r *http.Request) { writeJSON(w, 200, s.Tariff()) })
 	mux.HandleFunc("PUT /api/tarife", func(w http.ResponseWriter, r *http.Request) {
 		var input struct {
-			Version       *uint64  `json:"version"`
-			PricesCents   []*int64 `json:"pricesCents"`
-			ExtraDayCents *int64   `json:"extraDayCents"`
+			Version *uint64 `json:"version"`
+			Types   map[string]struct {
+				HourlyCents   *int64   `json:"hourlyCents"`
+				PricesCents   []*int64 `json:"pricesCents"`
+				ExtraDayCents *int64   `json:"extraDayCents"`
+			} `json:"types"`
 		}
 		if !readJSON(w, r, &input) {
 			return
 		}
-		if input.Version == nil || input.ExtraDayCents == nil {
-			apiError(w, domain.ValidationErrors{"form": "Tarifversion und Zusatztagspreis sind erforderlich."})
+		if input.Version == nil {
+			apiError(w, domain.ValidationErrors{"version": "Tarifversion erforderlich."})
 			return
 		}
-		tariff := domain.Tariff{Version: *input.Version, ExtraDayCents: *input.ExtraDayCents}
-		for _, price := range input.PricesCents {
-			if price == nil {
-				apiError(w, domain.ValidationErrors{"pricesCents": "Jeder Tagespreis muss eine ganze Centzahl sein."})
+		tariff := domain.Tariff{Version: *input.Version, Types: map[string]domain.Rate{}}
+		for kind, rate := range input.Types {
+			if rate.HourlyCents == nil || rate.ExtraDayCents == nil {
+				apiError(w, domain.ValidationErrors{"types": "Stundenpreis und Zusatztagspreis sind je Fahrradtyp erforderlich."})
 				return
 			}
-			tariff.PricesCents = append(tariff.PricesCents, *price)
+			r := domain.Rate{HourlyCents: *rate.HourlyCents, ExtraDayCents: *rate.ExtraDayCents}
+			for _, price := range rate.PricesCents {
+				if price == nil {
+					apiError(w, domain.ValidationErrors{"types": "Jeder Tagespreis muss eine ganze Centzahl sein."})
+					return
+				}
+				r.PricesCents = append(r.PricesCents, *price)
+			}
+			tariff.Types[kind] = r
 		}
 		result, err := s.SaveTariff(tariff)
 		if err != nil {
@@ -100,13 +118,15 @@ func registerRentals(mux *http.ServeMux, s *store.Store) {
 	})
 	mux.HandleFunc("POST /api/ausleihen/preis", func(w http.ResponseWriter, r *http.Request) {
 		var input struct {
+			BikeType string `json:"bikeType"`
+			Mode     string `json:"mode"`
 			StartsOn string `json:"startsOn"`
 			EndsOn   string `json:"endsOn"`
 		}
 		if !readJSON(w, r, &input) {
 			return
 		}
-		result, err := s.Quote(input.StartsOn, input.EndsOn)
+		result, err := s.Quote(input.BikeType, input.Mode, input.StartsOn, input.EndsOn)
 		if err != nil {
 			apiError(w, err)
 			return
@@ -115,11 +135,25 @@ func registerRentals(mux *http.ServeMux, s *store.Store) {
 	})
 	mux.HandleFunc("GET /api/fahrraeder/verfuegbar", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
-		if q.Has("startsOn") || q.Has("endsOn") {
-			result, err := s.AvailableFor(q.Get("startsOn"), q.Get("endsOn"))
+		if q.Has("startsOn") || q.Has("endsOn") || q.Has("mode") || q.Has("bikeType") {
+			kind := q.Get("bikeType")
+			if q.Has("bikeType") && !domain.ValidBikeType(kind) {
+				apiError(w, domain.ValidationErrors{"bikeType": "Bitte einen gültigen Fahrradtyp wählen."})
+				return
+			}
+			result, err := s.AvailableFor(q.Get("mode"), q.Get("startsOn"), q.Get("endsOn"))
 			if err != nil {
 				apiError(w, err)
 				return
+			}
+			if kind != "" {
+				filtered := []domain.Bike{}
+				for _, b := range result {
+					if b.Type == kind {
+						filtered = append(filtered, b)
+					}
+				}
+				result = filtered
 			}
 			writeJSON(w, 200, result)
 		} else {
@@ -142,25 +176,11 @@ func registerRentals(mux *http.ServeMux, s *store.Store) {
 		writeJSON(w, 200, exposeRental(result))
 	})
 	mux.HandleFunc("POST /api/ausleihen", func(w http.ResponseWriter, r *http.Request) {
-		var input struct {
-			PersonID      string  `json:"personID"`
-			BikeID        string  `json:"bikeID"`
-			StartsOn      string  `json:"startsOn"`
-			EndsOn        string  `json:"endsOn"`
-			TariffVersion *uint64 `json:"tariffVersion"`
-		}
+		var input domain.BookingInput
 		if !readJSON(w, r, &input) {
 			return
 		}
-		if _, _, err := domain.ValidateRentalReferences(input.PersonID, input.BikeID); err != nil {
-			apiError(w, err)
-			return
-		}
-		if input.TariffVersion == nil {
-			apiError(w, domain.ValidationErrors{"tariffVersion": "Bitte zuerst den Preis prüfen und bestätigen."})
-			return
-		}
-		result, err := s.CreateRental(input.PersonID, input.BikeID, input.StartsOn, input.EndsOn, *input.TariffVersion)
+		result, err := s.CreateRental(input)
 		if err != nil {
 			apiError(w, err)
 			return
