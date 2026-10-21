@@ -30,7 +30,7 @@ func TestPagesInBothModes(t *testing.T) {
 				for _, text := range []string{
 					"<h1>" + title + "</h1>", `lang="de"`, `href="#inhalt"`,
 					`href="/"`, `href="/fahrraeder"`, `href="/personen"`, `href="/ausleihe"`,
-					"BikeRental · Phase 4.", "aktuellen Bestandszahlen",
+					"BikeRental · Phase 5.", "aktuellen Bestandszahlen",
 					"Arbeitsspeicher", "beim Neustart verloren", `href="` + path + `" aria-current="page"`,
 				} {
 					if !strings.Contains(body, text) {

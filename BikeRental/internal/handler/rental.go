@@ -6,6 +6,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"strconv"
 	"time"
 
 	"bikerental/internal/domain"
@@ -13,6 +14,7 @@ import (
 )
 
 type rentalResponse struct {
+	StartMode        string             `json:"startMode"`
 	BasePriceCents   int64              `json:"basePriceCents"`
 	Extras           domain.Extras      `json:"extras"`
 	ExtraPrices      domain.ExtraPrices `json:"extraPrices"`
@@ -49,7 +51,7 @@ func optionalTime(t time.Time) *time.Time {
 }
 func exposeRental(d store.RentalDetails) rentalResponse {
 	r := d.Rental
-	return rentalResponse{BasePriceCents: r.BasePriceCents, Extras: r.Extras, ExtraPrices: r.ExtraPrices, ExtrasPriceCents: r.ExtrasPriceCents, BikeType: r.BikeType, Mode: r.Mode, StartsAt: r.StartsAt, EndsAt: r.EndsAt, DurationHours: r.DurationHours,
+	return rentalResponse{StartMode: r.StartMode, BasePriceCents: r.BasePriceCents, Extras: r.Extras, ExtraPrices: r.ExtraPrices, ExtrasPriceCents: r.ExtrasPriceCents, BikeType: r.BikeType, Mode: r.Mode, StartsAt: r.StartsAt, EndsAt: r.EndsAt, DurationHours: r.DurationHours,
 		CanIssue: r.Status(d.Now) == "booked" && !d.Now.Before(r.StartsAt) && d.Now.Before(r.EndsAt), ID: r.ID, PersonID: r.PersonID, BikeID: r.BikeID, PersonName: d.PersonName, BikeName: d.BikeName,
 		CreatedAt: r.CreatedAt, StartsOn: r.StartsOn, EndsOn: r.EndsOn, DurationDays: r.DurationDays, TotalPriceCents: r.TotalPriceCents,
 		TariffVersion: r.TariffVersion, Status: r.Status(d.Now), Overdue: r.Active() && !d.Now.Before(r.EndsAt),
@@ -145,6 +147,7 @@ func registerRentals(mux *http.ServeMux, s *store.Store) {
 	})
 	mux.HandleFunc("POST /api/ausleihen/preis", func(w http.ResponseWriter, r *http.Request) {
 		var input struct {
+			domain.StartOptions
 			Extras   *extrasInput `json:"extras"`
 			BikeType string       `json:"bikeType"`
 			Mode     string       `json:"mode"`
@@ -159,7 +162,7 @@ func registerRentals(mux *http.ServeMux, s *store.Store) {
 			apiError(w, err)
 			return
 		}
-		result, err := s.Quote(input.BikeType, input.Mode, input.StartsOn, input.EndsOn, extras)
+		result, err := s.QuoteWithStart(input.BikeType, input.Mode, input.StartsOn, input.EndsOn, extras, input.StartOptions)
 		if err != nil {
 			apiError(w, err)
 			return
@@ -168,13 +171,22 @@ func registerRentals(mux *http.ServeMux, s *store.Store) {
 	})
 	mux.HandleFunc("GET /api/fahrraeder/verfuegbar", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
-		if q.Has("startsOn") || q.Has("endsOn") || q.Has("mode") || q.Has("bikeType") {
+		if q.Has("startsOn") || q.Has("endsOn") || q.Has("mode") || q.Has("bikeType") || q.Has("startMode") || q.Has("rentalHours") {
 			kind := q.Get("bikeType")
 			if q.Has("bikeType") && !domain.ValidBikeType(kind) {
 				apiError(w, domain.ValidationErrors{"bikeType": "Bitte einen gültigen Fahrradtyp wählen."})
 				return
 			}
-			result, err := s.AvailableFor(q.Get("mode"), q.Get("startsOn"), q.Get("endsOn"))
+			options := domain.StartOptions{StartMode: q.Get("startMode")}
+			if q.Has("rentalHours") {
+				hours, err := strconv.Atoi(q.Get("rentalHours"))
+				if err != nil {
+					apiError(w, domain.ValidationErrors{"rentalHours": "Bitte eine ganze Stundenzahl angeben."})
+					return
+				}
+				options.RentalHours = hours
+			}
+			result, err := s.AvailableWithStart(q.Get("mode"), q.Get("startsOn"), q.Get("endsOn"), options)
 			if err != nil {
 				apiError(w, err)
 				return

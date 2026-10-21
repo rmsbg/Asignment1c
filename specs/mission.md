@@ -90,6 +90,18 @@ Die Regeln sind die Grundlage der Folgephasen und in Phase 0 noch nicht als
 Fahrradfunktionen implementiert. Detail-Spezifikationen dürfen sie nicht
 stillschweigend ändern.
 
+## Ergänzung aus der manuellen MVP-Prüfung
+
+Der Auftraggeber hat nach dem Wartezeitproblem bei „Mietbeginn jetzt“ die
+[Änderung Sofortbeginn](06-sofortbeginn.md) beauftragt. Bei Stundenmiete ist nun
+**Sofort beginnen** mit gewünschter ganzer Stundenzahl möglich: Serverzeit beim
+Buchungsabschluss ist der verbindliche Beginn, Ende ist Beginn plus volle Dauer.
+Die Vorschau bleibt bei längerer Eingabe preislich gültig, sofern Tarif und Auswahl
+unverändert sind; Verfügbarkeit wird beim Abschluss erneut geprüft. Die getrennte
+Ausgabe ist unmittelbar möglich. Mietzeit läuft bereits ab Buchung.
+**Für später reservieren** mit festen lokalen Terminen behält die bisherigen Regeln.
+Diese Ergänzung präzisiert die bisherige Stundenregel; sie ist keine MVP-Abnahme.
+
 ## Grenzen und Erfolgskriterien
 
 Wie SkiRental bleibt BikeRental zunächst ein lokaler Mitarbeiter-Prototyp mit

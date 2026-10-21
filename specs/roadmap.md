@@ -7,7 +7,10 @@ vom Auftraggeber abgenommen. Phase 1 ist implementiert, technisch geprüft und a
 vom Auftraggeber abgenommen. Phase 2 ist implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
 vom Auftraggeber abgenommen. Phase 3 ist implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
 vom Auftraggeber abgenommen. Phase 4 ist implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
-vom Auftraggeber abgenommen. Phase 5 ist noch offen. Als technische Ausgangsbasis dient der vorhandene
+vom Auftraggeber abgenommen. Phase 5 ist implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
+vom Auftraggeber abgenommen. Damit sind alle MVP-Phasen 0 bis 5 abgenommen. Aus der manuellen Prüfung wurde die
+beauftragte [Änderung Sofortbeginn](06-sofortbeginn.md) ergänzt; sie gehört zur
+Nachbesserung von Phase 5 und ist von deren Abnahme umfasst. Als technische Ausgangsbasis dient der vorhandene
 SkiRental-Stand bis einschließlich Phase 5. Dessen dokumentierte Abnahmen sind
 historische Nachweise für SkiRental, keine BikeRental-Abnahmen. Diese Roadmap
 ordnet Arbeit nach Abhängigkeiten und enthält keine Terminzusagen.
@@ -15,9 +18,8 @@ ordnet Arbeit nach Abhängigkeiten und enthält keine Terminzusagen.
 Für jede Phase gilt: **Spezifizieren → Aufgaben ableiten → Implementieren →
 Prüfen → Abnehmen**. Vor Codeänderungen entsteht eine Feature-Spezifikation in
 BikeRentals `specs/` mit Nutzerablauf, Datenmodell, Geschäftsregeln, API-Verhalten,
-Fehlerfällen und überprüfbaren Akzeptanzkriterien. Die nachfolgend genannten
-Feature-Dateien ab Phase 5 sind geplant und noch nicht angelegt. Spezifikationen
-und Prüfnachweise der Phasen 0 bis 4 sind bereits vorhanden.
+Fehlerfällen und überprüfbaren Akzeptanzkriterien. Feature-Spezifikationen
+und Prüfnachweise der Phasen 0 bis 5 sind angelegt.
 
 Technische Prüfergebnisse und ausdrückliche Auftraggeberabnahme werden getrennt
 festgehalten. Nach Abschluss und ausdrücklicher Auftraggeberabnahme jeder Phase
@@ -117,6 +119,7 @@ Verleihvorgang integriert.
 
 **Status:** Implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
 vom Auftraggeber abgenommen: „phase 4 ist hiermit abgenommen“.
+Gesichert mit `340a53b` (`Phase 4: Dashboard und durchgängige Bedienung abschließen`).
 **Spezifikation und Prüfnachweis:** [04-dashboard-bedienung.md](04-dashboard-bedienung.md).
 
 **Ergebnis:** Übersichtlicher Gesamtfluss gemäß B-05/B-06 und konsistente Kennzahlen.
@@ -135,7 +138,14 @@ vom Auftraggeber abgenommen: „phase 4 ist hiermit abgenommen“.
 
 ## Phase 5 – MVP-Gesamtprüfung und Dokumentation
 
-**Status:** Offen. **Geplante Spezifikation:** `05-mvp-abnahme.md`.
+**Status:** Implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
+vom Auftraggeber abgenommen: „phase 5 ist hiermit abgenommen“.
+Die Abnahme umfasst die Sofortbeginn-Nachbesserung. Der Stand wird mit
+`Phase 5: MVP-Gesamtprüfung und Dokumentation abschließen` lokal committet.
+**Spezifikation und Prüfnachweis:** [05-mvp-abnahme.md](05-mvp-abnahme.md).
+
+**Nachbesserung:** Sofortbeginn mit voller Dauer ab Buchungsabschluss und getrennte
+feste Reservierung; Spezifikation und Prüfnachweis unter [06-sofortbeginn.md](06-sofortbeginn.md).
 
 **Ergebnis:** Vorführbarer BikeRental-Prototyp mit nachvollziehbarem Prüfnachweis
 für alle Anforderungen B-01 bis B-06.

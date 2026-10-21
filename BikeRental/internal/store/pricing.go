@@ -1,6 +1,10 @@
 package store
 
-import "bikerental/internal/domain"
+import (
+	"time"
+
+	"bikerental/internal/domain"
+)
 
 type Conflict struct{ Field, Message string }
 
@@ -33,10 +37,13 @@ func (s *Store) SaveTariff(t domain.Tariff) (domain.Tariff, error) {
 	return cloneTariff(t), nil
 }
 func (s *Store) quoteLocked(kind, mode, start, end string, extras domain.Extras) (domain.Quote, error) {
+	return s.quoteWithStartLocked(kind, mode, start, end, extras, domain.StartOptions{}, s.now())
+}
+func (s *Store) quoteWithStartLocked(kind, mode, start, end string, extras domain.Extras, options domain.StartOptions, now time.Time) (domain.Quote, error) {
 	if !domain.ValidBikeType(kind) {
 		return domain.Quote{}, domain.ValidationErrors{"bikeType": "Bitte Downhill, MTB oder Rennrad auswählen."}
 	}
-	period, err := domain.BuildPeriod(mode, start, end, s.now())
+	period, err := domain.BuildBookingPeriod(mode, start, end, options, now)
 	if err != nil {
 		return domain.Quote{}, err
 	}
@@ -56,10 +63,16 @@ func (s *Store) quoteLocked(kind, mode, start, end string, extras domain.Extras)
 	if err != nil {
 		return domain.Quote{}, err
 	}
-	return domain.Quote{BasePriceCents: price, Extras: extras, ExtraPrices: charged, ExtraRates: s.tariff.Extras, ExtrasPriceCents: extraTotal, BikeType: kind, Mode: mode, DurationDays: period.DurationDays, DurationHours: period.DurationHours, StartsAt: period.StartsAt, EndsAt: period.EndsAt, TotalPriceCents: total, TariffVersion: s.tariff.Version}, nil
+	return domain.Quote{StartMode: options.Name(), BasePriceCents: price, Extras: extras, ExtraPrices: charged, ExtraRates: s.tariff.Extras, ExtrasPriceCents: extraTotal, BikeType: kind, Mode: mode, DurationDays: period.DurationDays, DurationHours: period.DurationHours, StartsAt: period.StartsAt, EndsAt: period.EndsAt, TotalPriceCents: total, TariffVersion: s.tariff.Version}, nil
 }
 func (s *Store) Quote(kind, mode, start, end string, extras domain.Extras) (domain.Quote, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.quoteLocked(kind, mode, start, end, extras)
+}
+
+func (s *Store) QuoteWithStart(kind, mode, start, end string, extras domain.Extras, options domain.StartOptions) (domain.Quote, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.quoteWithStartLocked(kind, mode, start, end, extras, options, s.now())
 }

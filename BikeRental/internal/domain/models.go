@@ -27,6 +27,8 @@ type Bike struct {
 
 // BookingInput contains only the choices owned by the booking request.
 type BookingInput struct {
+	StartMode     string `json:"startMode"`
+	RentalHours   int    `json:"rentalHours"`
 	Extras        Extras `json:"extras"`
 	PersonID      string `json:"personID"`
 	BikeID        string `json:"bikeID"`
@@ -39,6 +41,7 @@ type BookingInput struct {
 
 // Rental preserves the agreement independently of later tariff changes.
 type Rental struct {
+	StartMode        string
 	BasePriceCents   int64
 	Extras           Extras
 	ExtraPrices      ExtraPrices

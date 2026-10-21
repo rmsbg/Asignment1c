@@ -1,5 +1,10 @@
 # BikeRental – Phase 0: Grundlagen und Wiederverwendungsplan
 
+**Spätere Ergänzung zur MVP-Prüfung:** [Sofortbeginn](06-sofortbeginn.md) ergänzt
+Stundenmieten um volle Dauer ab Buchungsabschluss. Die hier dokumentierten festen
+Termine behalten ihre Regeln; „Mietbeginn jetzt“ als fester Zeitstempel wurde ersetzt.
+
+
 ## Status und Ziel
 
 **Status:** Technisch abgeschlossen, geprüft und am 21.10.2026 ausdrücklich

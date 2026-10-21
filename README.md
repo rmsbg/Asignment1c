@@ -16,13 +16,13 @@ Das System soll kostensparend entwickelt werden und daher zu möglichst großen 
 - exakt wie bei „SkiRental“
 
 
-## Entwicklungsstand – Phase 4
+## Entwicklungsstand – Phase 5
 
-**Phase 4 ist implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
-vom Auftraggeber abgenommen. [Prüfnachweis und Screenshots](specs/04-dashboard-bedienung.md).**
+**Phase 5 einschließlich Sofortbeginn ist implementiert, technisch geprüft und
+am 21.10.2026 ausdrücklich vom Auftraggeber abgenommen. [Anforderungsmatrix und Prüfnachweis](specs/05-mvp-abnahme.md).**
 Phase 0 ist mit `28aa829`, Phase 1 mit `b8901d2` und die ausdrücklich abgenommene
 Phase 2 mit `be2d6de` gesichert. Phase 3 wurde ausdrücklich abgenommen und mit
-`2eb73e9` committet.
+`2eb73e9` committet. Die ausdrücklich abgenommene Phase 4 ist mit `340a53b` gesichert.
 
 Die Arbeitskopie liegt in `BikeRental/` (Go-Modul `bikerental`) und baut auf
 SkiRental auf. Fahrräder mit Typ und Pflichtbild werden stundenweise oder tageweise
@@ -97,10 +97,15 @@ und Gesamtpreis sowie passende freie Fahrräder mit Bild, Name, Typ und ID. Ausw
 Tabulator/Leertaste/Pfeiltasten. Änderungen an Zeit, Typ, Mietart oder Extras verwerfen Auswahl und Preisvorschau
 und verlangen eine erneute Prüfung.
 
-- **Stundenmiete:** Eingabe minutengenau in Wiener Zeit, mindestens eine berechnete
-  Stunde, angefangene Stunden aufrunden. 10:00–11:15 kostet zwei Stunden, reserviert
-  aber nur bis 11:15. Über Mitternacht möglich. **Mietbeginn jetzt** füllt die
-  aktuelle Wiener Minute und eine geplante Stunde aus.
+- **Stundenmiete:** Feste Termine werden minutengenau in Wiener Zeit eingegeben,
+  angefangene Stunden aufgerundet. 10:00–11:15 kostet zwei Stunden, reserviert
+  aber nur bis 11:15. Über Mitternacht möglich. Bei **Sofort beginnen** die gewünschte positive ganze Stundenzahl eingeben
+  (voreingestellt 1). Die volle Dauer startet erst beim erfolgreichen Buchungsabschluss;
+  die Vorschau zeigt beispielsweise **1 Stunde ab Buchungsabschluss · 8 €**.
+  Die verbindlichen Uhrzeiten erscheinen nach dem Speichern, und die Ausgabe ist
+  sofort möglich. Die Mietzeit läuft bereits ab Buchung, auch bei späterer Ausgabe.
+  **Für später reservieren** verwendet feste Beginn-/Endtermine; die Ausgabe ist
+  erst ab dem gebuchten Beginn möglich. Eingaben dürfen dort nicht in der Vergangenheit liegen.
 - **Tagesmiete:** Beide Randtage zählen vollständig. Montag bis Dienstag sind zwei
   Tage, reserviert bis Mittwoch 00:00. Nach der Tagesstaffel gilt der Zusatztagspreis.
 - **Zeitzone:** Europe/Vienna, auch wenn der Browser eine andere Zeitzone verwendet.
@@ -168,6 +173,48 @@ beim Start keine Asset-Dateien aus dem Repository. Nach Asset-Änderungen neu st
 Die Demoillustrationen können ohne externe Pakete mit `go run ./tools/demo-bikes`
 aus ihrem mitgelieferten Zeichencode neu erzeugt werden.
 
+### Browser-Gesamtprüfung wiederholen
+
+Das mitgelieferte `BikeRental/tools/mvp-browser.cjs` prüft 24 vollständige
+Verleihabläufe (Normal/Demo × drei Typen × zwei Mietarten × mit/ohne Extras)
+plus Prüfungen für verzögert bestätigten Sofortbeginn und feste Reservierung,
+manuellen/fotografischen Ausweisnachweis, Bilder, Preisverlauf, Dashboard und echte
+Prozessneustarts. Es baut ein Binary, startet es in einem temporären Verzeichnis,
+beendet seine Server wieder und schreibt synthetische Screenshots nach `specs/screenshots/`.
+Ein bereits laufender Server wird nicht beendet; Port 8080 vorher freigeben.
+
+Nur für diese optionale Prüfung werden zusätzlich Node.js, Playwright und ein
+Chromium-Browser benötigt. Geprüft mit Node **24.19.0**, Playwright **1.62.1**
+und lokalem Google Chrome. Go muss im PATH liegen; alternativ `GO_BINARY` setzen.
+Die Anwendung selbst benötigt diese Werkzeuge nicht.
+
+Beispiel unter macOS, aus `BikeRental/`, Prüfabhängigkeiten außerhalb des Repositories:
+
+```sh
+npm install --prefix /tmp/bikerental-browser --no-save playwright@1.62.1
+PLAYWRIGHT_MODULE=/tmp/bikerental-browser/node_modules/playwright/test \
+CHROME_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+node tools/mvp-browser.cjs
+```
+
+Alternativ mit dem von Playwright bereitgestellten Chromium:
+`/tmp/bikerental-browser/node_modules/.bin/playwright install chromium`, anschließend
+dieselbe Prüfung ohne `CHROME_EXECUTABLE_PATH` starten. Beide Varianten verwenden
+denselben Prüflauf. Nach der Prüfung den gewünschten lokalen Server erneut starten.
+Für einen echten Wartezeittest zusätzlich `MVP_CONFIRM_DELAY_MS=65000` setzen:
+Im Normalmodus wird dann vor dem Buchungsabschluss länger als eine Minute gewartet.
+Die kontrollierte Sieben-Minuten-Prüfung im Store läuft bereits mit `go test ./...`.
+
+### Grenzen des MVP
+
+Speicherung und Bilder sind flüchtig; ein Neustart im Normalmodus beginnt leer,
+ein Demo-Neustart stellt ausschließlich Beispieldaten wieder her. Ohne JavaScript
+zeigt das Dashboard seine Anfangswerte; die Verwaltungsabläufe benötigen JavaScript.
+Benutzerkonten, dauerhafte Speicherung, produktiver Betrieb, Zahlungen, Rechnungen,
+Kundenportal, Zubehörbestände und externe Versicherungsabwicklung sind nicht umgesetzt.
+Die Mobilprüfung verwendet Browseremulation; physische Geräte und Screenreader
+sind nicht geprüft. Bekannte Grenzen und technische Nachweise stehen in Phase 5.
+
 ### Spezifikation und Abnahme
 
 - [Mission und Produktverfassung](specs/mission.md)
@@ -178,8 +225,11 @@ aus ihrem mitgelieferten Zeichencode neu erzeugt werden.
 - [Phase 2: Mietzeiten, Tarife und Prüfnachweis](specs/02-mietzeiten-preise.md)
 - [Phase 3: Zusatzleistungen, API und Prüfnachweis](specs/03-zusatzleistungen.md)
 - [Phase 4: Dashboard, Bedienung und Prüfnachweis](specs/04-dashboard-bedienung.md)
+- [Phase 5: MVP-Anforderungsmatrix und Gesamtprüfung](specs/05-mvp-abnahme.md)
+- [Änderung zur MVP-Abnahme: Sofortbeginn](specs/06-sofortbeginn.md)
 
-Phase 5 mit Anforderungsmatrix und abschließender MVP-Gesamtprüfung steht noch aus.
+Phase 5 bündelt die Anforderungen B-01 bis B-06 mit automatisierten Prüfungen
+und Browsernachweisen. Die technische Prüfung ersetzt keine Auftraggeberabnahme.
 
 Nach technischem Abschluss und ausdrücklicher Auftraggeberabnahme jeder Phase
 wird ein lokaler Git-Commit erstellt. Ein Implementierungsauftrag allein gilt

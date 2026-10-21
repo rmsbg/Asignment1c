@@ -76,7 +76,9 @@ func (s *Store) CreateRental(input domain.BookingInput) (RentalDetails, error) {
 	if bike.Type != input.BikeType {
 		return RentalDetails{}, Conflict{"bikeType", "Der Fahrradtyp wurde geändert. Bitte Verfügbarkeit und Preis erneut prüfen."}
 	}
-	quote, err := s.quoteLocked(bike.Type, input.Mode, input.StartsOn, input.EndsOn, input.Extras)
+	now := s.now().UTC()
+	options := domain.StartOptions{StartMode: input.StartMode, RentalHours: input.RentalHours}
+	quote, err := s.quoteWithStartLocked(bike.Type, input.Mode, input.StartsOn, input.EndsOn, input.Extras, options, now)
 	if err != nil {
 		return RentalDetails{}, err
 	}
@@ -90,18 +92,21 @@ func (s *Store) CreateRental(input domain.BookingInput) (RentalDetails, error) {
 		return RentalDetails{}, ErrUnavailable
 	}
 	s.nextRental++
-	r := domain.Rental{BasePriceCents: quote.BasePriceCents, Extras: quote.Extras, ExtraPrices: quote.ExtraPrices, ExtrasPriceCents: quote.ExtrasPriceCents, ID: fmt.Sprintf("ausleihe-%06d", s.nextRental), PersonID: personID, BikeID: bikeID,
+	r := domain.Rental{StartMode: quote.StartMode, BasePriceCents: quote.BasePriceCents, Extras: quote.Extras, ExtraPrices: quote.ExtraPrices, ExtrasPriceCents: quote.ExtrasPriceCents, ID: fmt.Sprintf("ausleihe-%06d", s.nextRental), PersonID: personID, BikeID: bikeID,
 		BikeType: bike.Type, Mode: input.Mode, StartsAt: quote.StartsAt, EndsAt: quote.EndsAt, DurationHours: quote.DurationHours,
-		CreatedAt: s.now().UTC(), StartsOn: input.StartsOn, EndsOn: input.EndsOn, DurationDays: quote.DurationDays,
+		CreatedAt: now, StartsOn: input.StartsOn, EndsOn: input.EndsOn, DurationDays: quote.DurationDays,
 		TotalPriceCents: quote.TotalPriceCents, TariffVersion: quote.TariffVersion}
 	s.rentals[r.ID] = r
 	return s.rentalDetailsLocked(r), nil
 }
 
 func (s *Store) AvailableFor(mode, start, end string) ([]domain.Bike, error) {
+	return s.AvailableWithStart(mode, start, end, domain.StartOptions{})
+}
+func (s *Store) AvailableWithStart(mode, start, end string, options domain.StartOptions) ([]domain.Bike, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	period, err := domain.BuildPeriod(mode, start, end, s.now())
+	period, err := domain.BuildBookingPeriod(mode, start, end, options, s.now())
 	if err != nil {
 		return nil, err
 	}

@@ -1,5 +1,10 @@
 # BikeRental – Phase 2: Mietzeiten und typabhängige Preise
 
+**Spätere Ergänzung zur MVP-Prüfung:** [Sofortbeginn](06-sofortbeginn.md) ergänzt
+Stundenmieten um volle Dauer ab Buchungsabschluss. Die hier dokumentierten festen
+Termine behalten ihre Regeln; „Mietbeginn jetzt“ als fester Zeitstempel wurde ersetzt.
+
+
 ## Status und Umfang
 
 **Status:** Implementiert und technisch geprüft am 21.10.2026.

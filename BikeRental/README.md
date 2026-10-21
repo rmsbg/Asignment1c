@@ -8,11 +8,14 @@ Phasennachweise werden zentral im übergeordneten Projekt gepflegt:
 - [Technische Verfassung](../specs/tech-stack.md)
 - [Phase 0](../specs/00-grundlagen.md)
 
-**Phase 4:** Dashboard mit fünf Schnellzugriffen, Hinweisen beim leeren Start und
-automatisch aktualisierten Kennzahlen. Der Speicherlink führt direkt zur Buchung
-für Ausgabe und Rückgabe; Verwaltungsfehler lassen sich erneut laden.
-Stunden-/Tagesmiete und Zusatzleistungen mit gespeicherter Preisaufteilung bleiben erhalten.
-Spezifikation und Prüfnachweis: [Phase 4](../specs/04-dashboard-bedienung.md).
-Phase 4 wurde am 21.10.2026 ausdrücklich abgenommen.
+**Phase 5:** MVP-Gesamtprüfung mit Anforderungsmatrix, HTTP-Prüfung aller Typen,
+Mietarten und Extras mit/ohne Auswahl sowie reproduzierbarem Browserprogramm
+`tools/mvp-browser.cjs`. Normal-/Demostart, eigenständiges Binary und Datenverlust
+beim Prozessneustart sind Bestandteil der Prüfung. Keine neuen Laufzeitabhängigkeiten.
 
+- [MVP-Anforderungsmatrix und Prüfnachweis](../specs/05-mvp-abnahme.md)
+- [Nachbesserung: Sofortbeginn ab Buchungsabschluss](../specs/06-sofortbeginn.md)
+- [Browserprüfung wiederholen](../README.md#browser-gesamtprüfung-wiederholen)
+
+Phase 5 einschließlich Sofortbeginn wurde am 21.10.2026 ausdrücklich abgenommen. Phase 4 ist mit `340a53b` gesichert.
 Start aus diesem Verzeichnis: `go run ./cmd/server`, optional mit `-demo`.

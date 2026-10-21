@@ -66,15 +66,24 @@ Feature-Spezifikation vor der Implementierung fest.
 
 ## Zeit, Preise und Konsistenz
 
+- Stundenbuchungen unterscheiden seit der [Änderung Sofortbeginn](06-sofortbeginn.md)
+  `startMode=now` mit positiver ganzer `rentalHours` und feste Termine
+  (`scheduled`, bei fehlendem Startmodus weiterhin Standard für API-Kompatibilität).
+  Sofortbeginn wird beim Speichern unter der Schreibsperre aus genau einem
+  Serverzeitpunkt aufgelöst; `StartsAt` und `CreatedAt` sind gleich. Ende ist
+  Beginn plus tatsächlich verstrichene Stunden, mit Überlaufprüfung der Dauer.
+  Vorschau und Verfügbarkeit lösen denselben relativen Wunsch vorläufig auf;
+  beim Abschluss werden Zeitraum, Verfügbarkeit und Tarif erneut geprüft.
+  Ein neuer Konflikt erzeugt keine Teilbuchung. Ausgabe verändert das Intervall nicht.
 - Geschäftskalender und lokale Eingaben richten sich nach `Europe/Vienna`.
-  Ereigniszeitpunkte werden wie bisher in UTC gespeichert. Stundenmieten
+  Ereigniszeitpunkte werden wie bisher in UTC gespeichert. Stundenmieten mit festen Terminen
   verwenden lokale Uhrzeiten mit Minutengenauigkeit; Eingaben mit Zeitzonenoffset
   oder Sekunden werden abgelehnt. Für Tagesmieten bleiben reine Datumsfelder.
 - Stunden- und Tagesmieten verwenden eine gemeinsame Verfügbarkeitsprüfung.
   Intervalle sind `[Beginn, Ende)` ohne Puffer. Tagesmieten reichen von lokaler
   Mitternacht bis Mitternacht nach dem letzten Tag. Mehrdeutige oder nicht
   existierende lokale Eingabezeiten werden abgelehnt; Stundenabrechnung verwendet
-  tatsächlich verstrichene Zeit. Beginn darf bei Stundenmiete nicht vor der aktuellen
+  tatsächlich verstrichene Zeit. Beginn darf bei fest terminierter Stundenmiete nicht vor der aktuellen
   Minute liegen. Die serverseitige Prüfung schneidet dafür Sekunden ab. Beispiele
   stehen in [Phase 0](00-grundlagen.md), Verträge in [Phase 2](02-mietzeiten-preise.md).
 - EUR-Beträge werden als ganze Cent mit Überlaufprüfung verarbeitet. Die bisherige
@@ -158,3 +167,20 @@ Geänderte Regeln benötigen aussagekräftige Fach- und HTTP-Tests; Speicheränd
 zusätzlich Race-Prüfungen. Browserprüfungen umfassen Desktop, mobile Darstellung,
 Tastaturbedienung, Bilder und verständliche Preis-/Fehleranzeigen. Nach Änderungen
 eingebetteter Assets ist ein Neustart erforderlich.
+
+
+## Reproduzierbare MVP-Gesamtprüfung
+
+Phase 5 ergänzt `internal/handler/mvp_matrix_test.go`: Der HTTP-Gesamtfluss prüft
+alle drei Typen, beide Mietarten und Extras mit/ohne Auswahl einschließlich
+Tarifänderung zwischen Ausgabe und Rückgabe. Vorhandene Fach-/HTTP-Prüfungen
+für Zeitgrenzen, Konflikte, Uploads und Nebenläufigkeit bleiben maßgeblich.
+
+`tools/mvp-browser.cjs` baut das Binary und startet Normal- und Demomodus in einem
+leeren temporären Arbeitsverzeichnis. Node.js und Playwright sind ausschließlich
+optionale Prüfwerkzeuge, keine neuen Anwendungsabhängigkeiten. Das Skript prüft
+beide Ausweisnachweise, alle Typen/Mietarten, Extras mit/ohne Auswahl, verzögerten Sofortbeginn, feste Reservierungen, eingebettete
+Assets und echten Datenverlust beim Prozessneustart. Port 8080 muss frei sein.
+Konfiguration: `GO_BINARY`, `PLAYWRIGHT_MODULE` und optional
+`CHROME_EXECUTABLE_PATH`; Anleitung im [README](../README.md#browser-gesamtprüfung-wiederholen).
+Anforderungsmatrix, Resultate und verbleibende Grenzen: [Phase 5](05-mvp-abnahme.md).

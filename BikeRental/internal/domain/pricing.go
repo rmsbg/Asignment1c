@@ -49,6 +49,7 @@ type Tariff struct {
 }
 
 type Quote struct {
+	StartMode        string      `json:"startMode"`
 	BasePriceCents   int64       `json:"basePriceCents"`
 	Extras           Extras      `json:"extras"`
 	ExtraPrices      ExtraPrices `json:"extraPrices"`
@@ -199,4 +200,42 @@ func BuildPeriod(mode, start, end string, now time.Time) (Period, error) {
 	}
 	seconds := b.Unix() - a.Unix()
 	return Period{StartsAt: a, EndsAt: b, DurationHours: int((seconds + 3599) / 3600)}, nil
+}
+
+// StartOptions distinguishes a duration starting at booking from fixed dates.
+type StartOptions struct {
+	StartMode   string `json:"startMode"`
+	RentalHours int    `json:"rentalHours"`
+}
+
+func (o StartOptions) Name() string {
+	if o.StartMode == "" {
+		return "scheduled"
+	}
+	return o.StartMode
+}
+
+// BuildBookingPeriod resolves immediate starts only against the server clock.
+func BuildBookingPeriod(mode, start, end string, options StartOptions, now time.Time) (Period, error) {
+	switch options.Name() {
+	case "scheduled":
+		if options.RentalHours != 0 {
+			return Period{}, ValidationErrors{"rentalHours": "Bei festen Terminen bitte Beginn und Ende statt einer Dauer angeben."}
+		}
+		return BuildPeriod(mode, start, end, now)
+	case "now":
+		if mode != "hour" {
+			return Period{}, ValidationErrors{"startMode": "Sofortbeginn ist nur bei Stundenmiete möglich."}
+		}
+		if start != "" || end != "" {
+			return Period{}, ValidationErrors{"startMode": "Bei Sofortbeginn keine festen Termine angeben."}
+		}
+		if options.RentalHours < 1 || int64(options.RentalHours) > int64((1<<63-1)/time.Hour) {
+			return Period{}, ValidationErrors{"rentalHours": "Bitte eine positive ganze Stundenzahl im zulässigen Bereich angeben."}
+		}
+		begins := now.UTC()
+		return Period{StartsAt: begins, EndsAt: begins.Add(time.Duration(options.RentalHours) * time.Hour), DurationHours: options.RentalHours}, nil
+	default:
+		return Period{}, ValidationErrors{"startMode": "Bitte Sofortbeginn oder feste Termine wählen."}
+	}
 }
