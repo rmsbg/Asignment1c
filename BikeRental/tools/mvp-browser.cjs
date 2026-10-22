@@ -172,7 +172,7 @@ async function workflow(page, demo) {
           await page.locator('#bikeID').screenshot({path: path.join(screenshots, '05-mvp-fahrradauswahl.png')});
         }
         await choice.focus(); await page.keyboard.press('Space');
-        await page.getByRole('button', {name: 'Zum angezeigten Preis buchen', exact: true}).click();
+        await page.getByRole('button', {name: 'Nur buchen', exact: true}).click();
         const link = page.getByRole('link', {name: 'Zur Ausgabe und Buchungsübersicht', exact: true});
         await expect(link).toBeVisible();
         const rentalID = decodeURIComponent((await link.getAttribute('href')).split('/')[1]);
@@ -254,7 +254,7 @@ async function immediateRegression(page, demo, saved) {
     await page.waitForTimeout(Math.min(30000, remaining));
   }
   const bookingResponse = page.waitForResponse(response => response.url() === base + '/api/ausleihen' && response.request().method() === 'POST');
-  await page.getByRole('button', {name: 'Zum angezeigten Preis buchen', exact: true}).click();
+  await page.getByRole('button', {name: 'Nur buchen', exact: true}).click();
   const response = await bookingResponse;
   assert.equal(response.status(), 201);
   const rental = await response.json();
@@ -289,7 +289,7 @@ async function immediateRegression(page, demo, saved) {
   await page.getByRole('button', {name: 'Verfügbarkeit und Preis prüfen', exact: true}).click();
   await page.locator('[name=bikeID][value="' + saved.bikes.MTB + '"]').check();
   await expect(page.locator('#rental-error')).toBeEmpty();
-  await page.getByRole('button', {name: 'Zum angezeigten Preis buchen', exact: true}).click();
+  await page.getByRole('button', {name: 'Buchen', exact: true}).click();
   await page.getByRole('link', {name: 'Zur Ausgabe und Buchungsübersicht', exact: true}).click();
   const fixed = (await json(page, '/api/ausleihen')).find(record => record.startMode === 'scheduled' && record.mode === 'hour' && record.status === 'booked');
   assert(fixed);

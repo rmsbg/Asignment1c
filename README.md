@@ -16,7 +16,7 @@ Das System soll kostensparend entwickelt werden und daher zu möglichst großen 
 - exakt wie bei „SkiRental“
 
 
-## Entwicklungsstand – Phase 5
+## Entwicklungsstand – Phase 6
 
 **Phase 5 einschließlich Sofortbeginn ist implementiert, technisch geprüft und
 am 21.10.2026 ausdrücklich vom Auftraggeber abgenommen. [Anforderungsmatrix und Prüfnachweis](specs/05-mvp-abnahme.md).**
@@ -32,6 +32,10 @@ jetzt unabhängig wählbare Zusatzleistungen mit Pauschalen pro Buchung.
 `SkiRental/` bleibt unveränderte Referenz mit eigenem Git-Repository. Das oberste
 Git-Repository umfasst BikeRental und Dokumentation; die Referenz ist darin
 wie vereinbart ausgeschlossen und bei einer Weitergabe separat bereitzustellen.
+
+Die Erweiterung **Buchen und ausgeben** (Phase 6) ist implementiert, technisch
+geprüft und am 22.10.2026 ausdrücklich vom Auftraggeber abgenommen.
+[Verhalten und Prüfnachweis](specs/07-buchen-und-ausgeben.md).
 
 ### Voraussetzungen und lokaler Start
 
@@ -119,9 +123,14 @@ Extras. Die Versicherungsoption dokumentiert Auswahl und Aufpreis; der lokale
 Prototyp führt keine externe Versicherungsabwicklung durch. Zubehörbestände
 werden nicht geführt.
 
-Nach **Zum angezeigten Preis buchen** erfolgt die Ausgabe separat über
-**Fahrrad ausgeben**, später **Rückgabe erfassen**. Der Bestätigungslink
-**Zur Ausgabe und Buchungsübersicht** öffnet direkt die gerade angelegte Buchung
+Bei Tagesmiete mit Beginn heute (Europe/Vienna) und bei Stundenmiete mit
+**Sofort beginnen** gibt es **Buchen und ausgeben** sowie **Nur buchen**.
+Beide Aktionen bestätigen den angezeigten Preis. **Buchen und ausgeben** speichert
+Buchung und tatsächliche Ausgabe gemeinsam; bei Konflikten wird nichts angelegt.
+**Nur buchen** lässt die spätere Ausgabe über **Fahrrad ausgeben** offen.
+Für spätere Tagesmieten und feste Stundenreservierungen gibt es **Buchen**.
+Die Rückgabe erfolgt über **Rückgabe erfassen**. Der Bestätigungslink
+**Zur Ausgabe und Buchungsübersicht** (bei Sofortausgabe **Zur Buchungsübersicht**) öffnet direkt die gerade angelegte Buchung
 und setzt den Fokus auf deren Karte. **Buchungen und Rückgaben** ist auch direkt
 vom Dashboard und Buchungsformular erreichbar. Ausgabe nur innerhalb des
 gebuchten Zeitraums und nach tatsächlicher Rückgabe des vorherigen Vorgangs.
@@ -227,6 +236,7 @@ sind nicht geprüft. Bekannte Grenzen und technische Nachweise stehen in Phase 5
 - [Phase 4: Dashboard, Bedienung und Prüfnachweis](specs/04-dashboard-bedienung.md)
 - [Phase 5: MVP-Anforderungsmatrix und Gesamtprüfung](specs/05-mvp-abnahme.md)
 - [Änderung zur MVP-Abnahme: Sofortbeginn](specs/06-sofortbeginn.md)
+- [Erweiterung: Buchen und ausgeben](specs/07-buchen-und-ausgeben.md)
 
 Phase 5 bündelt die Anforderungen B-01 bis B-06 mit automatisierten Prüfungen
 und Browsernachweisen. Die technische Prüfung ersetzt keine Auftraggeberabnahme.

@@ -8,7 +8,9 @@ vom Auftraggeber abgenommen. Phase 2 ist implementiert, technisch geprüft und a
 vom Auftraggeber abgenommen. Phase 3 ist implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
 vom Auftraggeber abgenommen. Phase 4 ist implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
 vom Auftraggeber abgenommen. Phase 5 ist implementiert, technisch geprüft und am 21.10.2026 ausdrücklich
-vom Auftraggeber abgenommen. Damit sind alle MVP-Phasen 0 bis 5 abgenommen. Aus der manuellen Prüfung wurde die
+vom Auftraggeber abgenommen. Damit sind alle MVP-Phasen 0 bis 5 abgenommen. Auch die Erweiterung
+[Phase 6 – Buchen und ausgeben](07-buchen-und-ausgeben.md) ist am 22.10.2026
+ausdrücklich vom Auftraggeber abgenommen. Aus der manuellen Prüfung wurde die
 beauftragte [Änderung Sofortbeginn](06-sofortbeginn.md) ergänzt; sie gehört zur
 Nachbesserung von Phase 5 und ist von deren Abnahme umfasst. Als technische Ausgangsbasis dient der vorhandene
 SkiRental-Stand bis einschließlich Phase 5. Dessen dokumentierte Abnahmen sind
@@ -162,6 +164,14 @@ für alle Anforderungen B-01 bis B-06.
   Prüfkommandos, Bedienung und Grenzen. Screenshots verwenden synthetische Daten.
 - Abweichungen sind explizit dokumentiert; technische Fertigstellung ersetzt
   keine ausdrückliche Auftraggeberabnahme.
+
+## Phase 6 – Buchen und ausgeben
+
+Implementiert, technisch geprüft und am 22.10.2026 ausdrücklich vom Auftraggeber
+abgenommen: „änderung ist abgenommen. bitte mach einen commit und aktualisiere
+die dokumente entsprechend“.
+Übernahme des SkiRental-Ablaufs, ergänzt um Stundenmiete mit Sofortbeginn.
+Verhalten, Prüfungen und Screenshots: [07-buchen-und-ausgeben.md](07-buchen-und-ausgeben.md).
 
 ## Spätere Erweiterungen
 

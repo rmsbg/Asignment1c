@@ -57,6 +57,15 @@ func (s *Store) AvailableBikes() []domain.Bike {
 
 // CreateRental validates price, references and overlap in one atomic operation.
 func (s *Store) CreateRental(input domain.BookingInput) (RentalDetails, error) {
+	return s.createRental(input, false)
+}
+
+// CreateAndIssueRental books and records the handover atomically.
+func (s *Store) CreateAndIssueRental(input domain.BookingInput) (RentalDetails, error) {
+	return s.createRental(input, true)
+}
+
+func (s *Store) createRental(input domain.BookingInput, issueImmediately bool) (RentalDetails, error) {
 	personID, bikeID, err := domain.ValidateRentalReferences(input.PersonID, input.BikeID)
 	if err != nil {
 		return RentalDetails{}, err
@@ -91,11 +100,19 @@ func (s *Store) CreateRental(input domain.BookingInput) (RentalDetails, error) {
 	if !s.availablePeriodLocked(bikeID, quote.StartsAt, quote.EndsAt) {
 		return RentalDetails{}, ErrUnavailable
 	}
+	if issueImmediately {
+		if err := s.validateIssueLocked(bikeID, quote.StartsAt, quote.EndsAt, now); err != nil {
+			return RentalDetails{}, err
+		}
+	}
 	s.nextRental++
 	r := domain.Rental{StartMode: quote.StartMode, BasePriceCents: quote.BasePriceCents, Extras: quote.Extras, ExtraPrices: quote.ExtraPrices, ExtrasPriceCents: quote.ExtrasPriceCents, ID: fmt.Sprintf("ausleihe-%06d", s.nextRental), PersonID: personID, BikeID: bikeID,
 		BikeType: bike.Type, Mode: input.Mode, StartsAt: quote.StartsAt, EndsAt: quote.EndsAt, DurationHours: quote.DurationHours,
 		CreatedAt: now, StartsOn: input.StartsOn, EndsOn: input.EndsOn, DurationDays: quote.DurationDays,
 		TotalPriceCents: quote.TotalPriceCents, TariffVersion: quote.TariffVersion}
+	if issueImmediately {
+		r.RentedAt = now
+	}
 	s.rentals[r.ID] = r
 	return s.rentalDetailsLocked(r), nil
 }
@@ -132,19 +149,28 @@ func (s *Store) IssueRental(id string) (RentalDetails, error) {
 	if !r.RentedAt.IsZero() {
 		return s.rentalDetailsLocked(r), nil
 	}
-	now := s.now()
-	if now.Before(r.StartsAt) || !now.Before(r.EndsAt) {
-		return RentalDetails{}, Conflict{"form", "Die Ausgabe ist nur innerhalb des gebuchten Zeitraums möglich."}
+	now := s.now().UTC()
+	if err := s.validateIssueLocked(r.BikeID, r.StartsAt, r.EndsAt, now); err != nil {
+		return RentalDetails{}, err
 	}
-	for _, other := range s.rentals {
-		if other.BikeID == r.BikeID && other.Active() {
-			return RentalDetails{}, Conflict{"form", "Das Fahrrad wurde aus einer vorherigen Ausleihe noch nicht zurückgegeben."}
-		}
-	}
-	r.RentedAt = s.now().UTC()
+	r.RentedAt = now
 	s.rentals[id] = r
 	return s.rentalDetailsLocked(r), nil
 }
+
+// validateIssueLocked checks the actual handover before any state is changed.
+func (s *Store) validateIssueLocked(bikeID string, start, end, now time.Time) error {
+	if now.Before(start) || !now.Before(end) {
+		return Conflict{"form", "Die Ausgabe ist nur innerhalb des gebuchten Zeitraums möglich."}
+	}
+	for _, other := range s.rentals {
+		if other.BikeID == bikeID && other.Active() {
+			return Conflict{"form", "Das Fahrrad wurde aus einer vorherigen Ausleihe noch nicht zurückgegeben."}
+		}
+	}
+	return nil
+}
+
 func (s *Store) CancelRental(id string) (RentalDetails, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

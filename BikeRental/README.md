@@ -18,4 +18,10 @@ beim Prozessneustart sind Bestandteil der Prüfung. Keine neuen Laufzeitabhängi
 - [Browserprüfung wiederholen](../README.md#browser-gesamtprüfung-wiederholen)
 
 Phase 5 einschließlich Sofortbeginn wurde am 21.10.2026 ausdrücklich abgenommen. Phase 4 ist mit `340a53b` gesichert.
+**Phase 6 – Buchen und ausgeben:** Implementiert, technisch geprüft und am
+22.10.2026 ausdrücklich vom Auftraggeber abgenommen. Bei Tagesmiete ab heute und
+Stundenmiete mit „Sofort beginnen“ stehen „Buchen und ausgeben“ und „Nur buchen“
+zur Verfügung; für spätere Termine „Buchen“.
+[Verhalten, Abnahme und Prüfnachweis](../specs/07-buchen-und-ausgeben.md).
+
 Start aus diesem Verzeichnis: `go run ./cmd/server`, optional mit `-demo`.

@@ -223,7 +223,8 @@ func registerRentals(mux *http.ServeMux, s *store.Store) {
 	mux.HandleFunc("POST /api/ausleihen", func(w http.ResponseWriter, r *http.Request) {
 		var input struct {
 			domain.BookingInput
-			Extras *extrasInput `json:"extras"`
+			IssueImmediately bool         `json:"issueImmediately"`
+			Extras           *extrasInput `json:"extras"`
 		}
 		if !readJSON(w, r, &input) {
 			return
@@ -239,7 +240,11 @@ func registerRentals(mux *http.ServeMux, s *store.Store) {
 			return
 		}
 		input.BookingInput.Extras = extras
-		result, err := s.CreateRental(input.BookingInput)
+		create := s.CreateRental
+		if input.IssueImmediately {
+			create = s.CreateAndIssueRental
+		}
+		result, err := create(input.BookingInput)
 		if err != nil {
 			apiError(w, err)
 			return
